@@ -1,0 +1,602 @@
+/* OpenStand — a paper chart on a music stand in a dim practice room. */
+
+:root {
+  --stage: #13110f;
+  --surface: #1c1916;
+  --surface-2: #26221e;
+  --line: #36302a;
+  --text: #ece4d6;
+  --muted: #9b9184;
+  --brass: #e3a447;
+  --brass-ink: #1d1406;
+  --paper: #f4ede0;
+  --paper-shade: #e9dfcc;
+  --ink: #1d1a16;
+  --ink-soft: #6f6556;
+  --mark: rgba(227, 164, 71, 0.28);
+
+  --sans: 'Instrument Sans Variable', system-ui, sans-serif;
+  --serif: 'Fraunces Variable', Georgia, serif;
+  --radius: 10px;
+
+  font: 15px/1.5 var(--sans);
+  color: var(--text);
+  background: var(--stage);
+  color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+select,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+/* ---------- Layout ---------- */
+
+.app {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.workspace > * {
+  min-width: 0;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr) 220px;
+  gap: 28px;
+  align-items: start;
+  width: 100%;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 28px 28px 40px;
+}
+
+/* ---------- Top bar ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 28px;
+  border-bottom: 1px solid var(--line);
+}
+
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  text-decoration: none;
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  font-variation-settings: 'SOFT' 100, 'WONK' 1;
+  letter-spacing: -0.01em;
+}
+
+.wordmark svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: var(--brass);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.topbar-tag {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.topbar-link {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.875rem;
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 12px;
+}
+
+.topbar-link:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+/* ---------- Library ---------- */
+
+.library-title,
+.panel-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.library-count {
+  color: var(--ink-soft);
+}
+
+.library-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.tune {
+  width: 100%;
+  display: grid;
+  gap: 1px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 9px 12px;
+}
+
+.tune:hover {
+  background: var(--surface);
+}
+
+.tune[aria-current='true'] {
+  background: var(--surface);
+  border-left-color: var(--brass);
+}
+
+.tune-title {
+  font-family: var(--serif);
+  font-size: 1.02rem;
+  font-weight: 500;
+  font-variation-settings: 'SOFT' 50;
+}
+
+.tune-meta {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* ---------- Chart (the paper) ---------- */
+
+.sheet {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 4px;
+  padding: 40px 44px 52px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 24px 60px -24px rgba(0, 0, 0, 0.8),
+    0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.sheet-head {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 16px;
+  margin-bottom: 36px;
+}
+
+.sheet-title {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 600;
+  font-variation-settings: 'SOFT' 100, 'WONK' 1, 'opsz' 72;
+  letter-spacing: -0.015em;
+  text-align: center;
+  line-height: 1.1;
+}
+
+.sheet-meta {
+  color: var(--ink-soft);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.95rem;
+}
+
+.sheet-meta-right {
+  text-align: right;
+}
+
+.bars {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  row-gap: 22px;
+}
+
+.bar {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--chords, 1), minmax(0, 1fr));
+  align-items: center;
+  min-height: 76px;
+  padding: 0 10px 0 14px;
+  border-right: 1.5px solid var(--ink);
+  transition: background-color 0.12s;
+}
+
+.bar-row-start {
+  border-left: 1.5px solid var(--ink);
+}
+
+.bar-final {
+  border-right: 5px double var(--ink);
+}
+
+.bar-active {
+  background: var(--mark);
+}
+
+.bar-number {
+  position: absolute;
+  top: -15px;
+  left: 0;
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+}
+
+.bar-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--brass);
+  transform-origin: left;
+}
+
+/* Chord symbols are set like a hand-copied lead sheet: big root, raised extensions */
+.chord {
+  font-family: var(--serif);
+  font-variation-settings: 'SOFT' 100, 'opsz' 48;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.chord-root {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.chord-accidental {
+  font-size: 1.15rem;
+  font-weight: 500;
+  vertical-align: 0.65em;
+  margin-left: 1px;
+}
+
+.chord-quality {
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-left: 1px;
+}
+
+.chord-ext {
+  font-size: 0.85rem;
+  font-weight: 500;
+  vertical-align: 0.95em;
+  margin-left: 1px;
+}
+
+.chord-bass {
+  font-size: 1.05rem;
+  font-weight: 500;
+  margin-left: 2px;
+  color: var(--ink-soft);
+}
+
+/* ---------- Mixer ---------- */
+
+.mixer {
+  display: grid;
+  gap: 10px;
+}
+
+.strip {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 10px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 12px 12px;
+}
+
+.strip-name {
+  font-weight: 600;
+}
+
+.strip input[type='range'] {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.strip-muted .strip-name,
+.strip-muted input {
+  opacity: 0.45;
+}
+
+.mute {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1px 8px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.mute[aria-pressed='true'] {
+  border-color: var(--brass);
+  color: var(--brass);
+}
+
+input[type='range'] {
+  accent-color: var(--brass);
+}
+
+/* ---------- Transport ---------- */
+
+.transport {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 26px;
+  padding: 14px 28px;
+  background: rgba(28, 25, 22, 0.94);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--line);
+}
+
+.transport-main {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.play {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  flex: none;
+  border: none;
+  border-radius: 50%;
+  background: var(--brass);
+  color: var(--brass-ink);
+  transition: transform 0.1s;
+}
+
+.play:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+.play:disabled {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.play-icon {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.play-ring {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 3;
+}
+
+.play-ring-fill {
+  stroke: var(--brass);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.2s;
+}
+
+.readout {
+  min-width: 15rem;
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-variation-settings: 'SOFT' 50;
+}
+
+.readout-error {
+  color: #ff9a8a;
+  font-family: var(--sans);
+  font-size: 0.875rem;
+}
+
+.control {
+  display: grid;
+  gap: 4px;
+}
+
+.control-label {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.control select {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stepper button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  line-height: 1;
+}
+
+.stepper button:disabled {
+  opacity: 0.4;
+}
+
+.stepper-value {
+  min-width: 2.2ch;
+  text-align: center;
+  font-weight: 600;
+}
+
+.control-tempo input[type='range'] {
+  width: 150px;
+}
+
+/* ---------- Small screens ---------- */
+
+@media (max-width: 1100px) {
+  .workspace {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+  .mixer {
+    grid-column: 2;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .mixer .panel-title {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar-tag {
+    display: none;
+  }
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px 12px 24px;
+    gap: 18px;
+  }
+  .library-list {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 6px;
+    padding-bottom: 4px;
+  }
+  .tune {
+    flex: none;
+    max-width: 220px;
+    white-space: nowrap;
+    border-left: none;
+    border-bottom: 2px solid transparent;
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .tune[aria-current='true'] {
+    border-bottom-color: var(--brass);
+  }
+  .mixer {
+    grid-column: 1;
+  }
+  .sheet {
+    padding: 24px 14px 30px;
+  }
+  .sheet-head {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 4px;
+  }
+  .sheet-meta-right {
+    text-align: center;
+  }
+  .bar {
+    min-height: 56px;
+    padding: 0 4px 0 6px;
+  }
+  .chord-root {
+    font-size: 1.35rem;
+  }
+  .chord-quality {
+    font-size: 0.9rem;
+  }
+  .chord-accidental,
+  .chord-ext {
+    font-size: 0.7rem;
+  }
+  .transport {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 10px 12px 12px;
+    gap: 8px 12px;
+  }
+  .transport-main {
+    grid-column: 1 / -1;
+    gap: 14px;
+  }
+  .play {
+    width: 52px;
+    height: 52px;
+  }
+  .readout {
+    min-width: 0;
+    font-size: 0.95rem;
+  }
+  .control select {
+    width: 100%;
+  }
+  .control-tempo input[type='range'] {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
