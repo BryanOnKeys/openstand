@@ -15,6 +15,8 @@ No install, no account, no subscription. Just open the page and play.
 OpenStand is an **early but usable** practice tool. What works today:
 
 - **Import from iReal Pro.** Paste an `irealb://` link or a whole playlist (or choose an iReal Pro HTML export) and the tunes land in your library. Sections, repeats, first and second endings, D.C./D.S. al Coda/Fine, time signatures and N.C. bars are all read and played in the right order. Tested against public playlists of almost 2,000 tunes.
+- **Write your own charts.** Type chords the way you would say them (`Dm7 G7`, `Cmaj7`, `Bø`, `F#dim7`) and press Enter for the next bar. Add sections, repeats, endings, segno and coda, D.C./D.S. jumps, time signature, key, style and tempo. Edit any tune in the library the same way.
+- **Export to iReal Pro.** Any chart, imported or written here, can be copied as an `irealb://` link that opens in iReal Pro. All ~2,000 test tunes come back unchanged after going out and in again.
 - **A tune library in your browser.** Search by title or composer, filter by playlist. Everything is stored locally (IndexedDB); there is no server and no account.
 - **Share a tune as a link.** The whole chart is compressed into the URL, so whoever opens it sees and hears the same tune.
 - **Eight styles:** Medium Swing, Ballad (brushes), Jazz Waltz (3/4), Bossa Nova (nylon guitar), Samba, Pop Rock, Funk (electric piano, sixteenth-note groove) and Shuffle (boogie bass). Imported tunes get the closest style automatically, and you can switch styles while the band is playing.
@@ -25,6 +27,7 @@ OpenStand is an **early but usable** practice tool. What works today:
   - Every chorus is played a little differently
 - **A real-looking lead sheet.** Chord symbols in a handwritten jazz hand (Petaluma), rehearsal marks, repeat signs, endings, segno and coda, correct flat/sharp spelling in every key, and the current bar marked with a highlighter stroke as it plays.
 - **Practice controls:** tempo (40–300 BPM, changes instantly), transpose to any key while playing, number of choruses, count-in, <kbd>Space</kbd> to play/stop.
+- **Practice modes:** loop any bars or a rehearsal section, go round all 12 keys (or step up a half or whole tone each chorus), and speed up a few BPM every chorus.
 - **Mixer** with per-instrument volume and mute.
 - **Light and dark themes** that follow your system setting, and a layout that works on phones.
 - **Small download, works offline.** The sound bank is trimmed to the instruments OpenStand uses and compressed to 4.5 MB. After the first visit the app works without a connection and can be installed on a phone's home screen.
@@ -117,8 +120,9 @@ Positions are in beats from the start of the bar or chord. Off-beat eighths are 
 - [x] Works offline after the first visit (PWA), installable on phones
 - [ ] More styles: up-tempo swing, Afro-Cuban, reggae, 12/8 — and beyond (Balkan, Turkish *usul*, Afrobeat…)
 - [ ] A style playground: edit a groove in the browser and hear it right away
-- [ ] Chart editor, and export back to iReal Pro, ChordPro and MusicXML
-- [ ] Practice modes: tempo ramp per chorus, loop a section, cycle through all 12 keys
+- [x] Chart editor, and export back to iReal Pro
+- [x] Practice modes: tempo ramp per chorus, loop a section, cycle through all 12 keys
+- [ ] Export to ChordPro and MusicXML
 - [ ] Chord helper: piano keyboard, guitar diagrams, scale suggestions
 - [ ] Export to WAV / MIDI / PDF
 - [ ] Engine published as a standalone package

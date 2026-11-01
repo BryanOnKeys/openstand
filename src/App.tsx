@@ -1,16 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Player } from './audio/player'
 import { arrange, BASE_BPM, CHANNELS, type Part } from './engine/arrange'
-import type { Timeline } from './engine/timeline'
+import { chorusTranspose, type Timeline } from './engine/timeline'
 import { parseIrealLinks } from './formats/ireal'
+import { irealLink } from './formats/irealWrite'
 import { chartFromHash, shareUrl } from './formats/share'
-import { addTunes, loadTunes, removePlaylist } from './library/db'
+import { addTunes, loadTunes, removePlaylist, removeTune, saveTune } from './library/db'
+import type { Chart as ChartData } from './music/chart'
+import { keyPrefersFlats, noteName } from './music/chords'
+import { emptyChart } from './music/edit'
 import { EXAMPLES, type Tune } from './music/songs'
 import { getStyle } from './styles'
 import { Chart } from './ui/Chart'
+import { Editor, EditorHeader } from './ui/Editor'
 import { ImportDialog, type ImportResult } from './ui/ImportDialog'
 import { Library } from './ui/Library'
 import { Mixer } from './ui/Mixer'
+import { Popover } from './ui/Popover'
+import { NO_PRACTICE, type PracticeSettings } from './music/practice'
+import { Practice } from './ui/Practice'
 import { Transport, type Readiness } from './ui/Transport'
 
 interface Position {
@@ -26,15 +34,28 @@ interface ArrangeOptions {
   styleId: string
   transpose: number
   choruses: number
+  practice: PracticeSettings
+}
+
+// The chart being edited, and the saved tune it came from (none for a new chart)
+interface Draft {
+  chart: ChartData
+  from: Tune | null
 }
 
 const BPM_RANGE: [number, number] = [40, 300]
+const MAX_CHORUSES = 24
+const clampBpm = (v: number) => Math.max(BPM_RANGE[0], Math.min(BPM_RANGE[1], v))
 
 // Keeps the transposition within -5..+6 so the band's register doesn't drift
 const offsetToKey = (from: number, to: number) => ((to - from + 17) % 12) - 5
 
 // The comp instrument is named after the style's General MIDI program
 const LAST_TUNE = 'openstand:last-tune'
+
+const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a)
+
+const noteNameFor = (pc: number) => noteName(pc, keyPrefersFlats(pc)).replace('b', '♭').replace('#', '♯')
 
 const compLabel = (program: number) => (program >= 24 && program <= 31 ? 'Guitar' : 'Piano')
 
@@ -74,11 +95,21 @@ export default function App() {
   const [volumes, setVolumes] = useState<Record<Part, number>>({ bass: 110, comp: 85, drums: 95 })
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [muted, setMuted] = useState<Record<Part, boolean>>({ bass: false, comp: false, drums: false })
+  const [practice, setPractice] = useState<PracticeSettings>(NO_PRACTICE)
+  const [picking, setPicking] = useState<null | 'first' | { from: number }>(null)
+  const [draft, setDraft] = useState<Draft | null>(null)
+  const [editBar, setEditBar] = useState(0)
+  const [irealState, setIrealState] = useState<'idle' | 'copied' | 'failed'>('idle')
 
   const tune = tunes.find((t) => t.id === songId) ?? tunes[0] ?? EXAMPLES[0]
-  const chart = tune.chart
-  const style = getStyle(styleId)
+  const chart = draft?.chart ?? tune.chart
+  const style = getStyle(draft ? draft.chart.style : styleId)
   const keyPc = (chart.key + transpose + 12) % 12
+
+  // During practice the chorus decides the key on the stand and the tempo
+  const chorus = position ? Math.min(position.chorus, choruses - 1) : 0
+  const shownTranspose = playing ? chorusTranspose(transpose, practice.keyStep, chorus) : transpose
+  const liveBpm = clampBpm(bpm + practice.ramp * (playing ? chorus : 0))
 
   useEffect(() => {
     // The effect may run twice (StrictMode); a discarded player must not update the UI
@@ -109,16 +140,17 @@ export default function App() {
 
   // Tempo changes only the playback rate; the arrangement is not regenerated
   useEffect(() => {
-    playerRef.current?.setRate(bpm / BASE_BPM)
-  }, [bpm])
+    playerRef.current?.setRate(liveBpm / BASE_BPM)
+  }, [liveBpm])
 
   const start = async (opts: ArrangeOptions, fromSeconds = 0) => {
     const player = playerRef.current
     if (!player) return
-    const { midi, timeline } = arrange(chart, getStyle(opts.styleId), opts.transpose, opts.choruses)
+    const { loop, keyStep } = opts.practice
+    const { midi, timeline } = arrange(chart, getStyle(opts.styleId), opts.transpose, opts.choruses, { loop, keyStep })
     timelineRef.current = timeline
     await player.play(midi, fromSeconds)
-    player.setRate(bpm / BASE_BPM)
+    player.setRate(liveBpm / BASE_BPM)
     setPlaying(true)
   }
 
@@ -128,32 +160,45 @@ export default function App() {
     setPosition(null)
   }, [])
 
-  // Changing style, key or choruses while playing continues from the same spot with a new arrangement
-  const changeArrangement = (next: ArrangeOptions) => {
+  // Changing style, key or choruses while playing continues from the same spot with a new arrangement;
+  // a new loop starts over
+  const changeArrangement = (patch: Partial<ArrangeOptions>) => {
+    const next = { styleId, transpose, choruses, practice, ...patch }
     setStyleId(next.styleId)
     setTranspose(next.transpose)
     setChoruses(next.choruses)
+    setPractice(next.practice)
     const player = playerRef.current
-    if (playing && player) void start(next, player.position)
+    const loopChanged = String(next.practice.loop) !== String(practice.loop)
+    if (playing && player) void start(next, loopChanged ? 0 : player.position)
   }
 
-  const toggle = () => (playing ? stop() : void start({ styleId, transpose, choruses }))
+  const changePractice = (next: PracticeSettings) => {
+    // Going round the keys needs enough choruses to get back home
+    const keysNeeded = next.keyStep ? 12 / gcd(next.keyStep, 12) : 0
+    const nextChoruses = next.keyStep !== practice.keyStep && choruses < keysNeeded ? keysNeeded : choruses
+    changeArrangement({ practice: next, choruses: nextChoruses })
+  }
+
+  const toggle = () => (playing ? stop() : void start({ styleId, transpose, choruses, practice }))
   const toggleRef = useRef(toggle)
   useEffect(() => {
     toggleRef.current = toggle
   })
 
-  // Space toggles playback unless a form control has focus
+  // Space toggles playback unless a form control has focus or a chart is being edited
+  const editing = draft !== null
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement
-      if (e.code !== 'Space' || target.closest('input, select, textarea, button')) return
+      if (e.key === 'Escape') setPicking(null)
+      if (e.code !== 'Space' || editing || target.closest('input, select, textarea, button, [role="button"]')) return
       e.preventDefault()
       if (readiness.kind === 'ready') toggleRef.current()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [readiness.kind])
+  }, [readiness.kind, editing])
 
   // Follow the audio clock to highlight the current bar
   useEffect(() => {
@@ -177,6 +222,8 @@ export default function App() {
     setStyleId(next.chart.style)
     setTranspose(0)
     setBpm(next.chart.bpm)
+    setPractice((p) => ({ ...p, loop: null }))
+    setPicking(null)
     setLibraryOpen(false)
     localStorage.setItem(LAST_TUNE, next.id)
   }, [])
@@ -254,21 +301,78 @@ export default function App() {
     return () => window.removeEventListener('paste', onPaste)
   }, [importText])
 
-  const share = async () => {
+  const copy = async (text: () => Promise<string> | string, set: (s: 'idle' | 'copied' | 'failed') => void) => {
     try {
-      await navigator.clipboard.writeText(await shareUrl(chart))
-      setShareState('copied')
+      await navigator.clipboard.writeText(await text())
+      set('copied')
     } catch {
-      setShareState('failed')
+      set('failed')
     }
-    setTimeout(() => setShareState('idle'), 2200)
+    setTimeout(() => set('idle'), 2200)
   }
 
+  // ---- Editing ----
+
+  const startEditing = (from: Tune | null) => {
+    stop()
+    setPicking(null)
+    setLibraryOpen(false)
+    setDraft({ chart: from ? from.chart : emptyChart(), from })
+    setEditBar(0)
+  }
+
+  const saveDraft = async () => {
+    if (!draft) return
+    const chart = { ...draft.chart, title: draft.chart.title.trim() || 'Untitled' }
+    let saved: Tune
+    if (draft.from && draft.from.source !== 'example') {
+      saved = { ...draft.from, chart }
+      await saveTune(saved)
+    } else {
+      ;[saved] = await addTunes([chart], 'own', 'My tunes')
+    }
+    setTunes((all) => [...all.filter((t) => t.id !== saved.id), saved])
+    setDraft(null)
+    showTune(saved)
+  }
+
+  const deleteDraftTune = async () => {
+    if (!draft?.from) return
+    await removeTune(draft.from.id)
+    setTunes((all) => all.filter((t) => t.id !== draft.from?.id))
+    setDraft(null)
+    showTune(EXAMPLES[0])
+  }
+
+  // ---- Loop picking: tap the first bar, then the last ----
+
+  const pickBar = (index: number) => {
+    if (picking === 'first') setPicking({ from: index })
+    else if (picking) {
+      setPicking(null)
+      const from = picking.from
+      changePractice({ ...practice, loop: [Math.min(from, index), Math.max(from, index)] })
+    }
+  }
+
+  const loopLabel = practice.loop
+    ? practice.loop[0] === practice.loop[1]
+      ? `Bar ${practice.loop[0] + 1}`
+      : `Bars ${practice.loop[0] + 1}–${practice.loop[1] + 1}`
+    : null
+
   const readout = (() => {
-    if (!position) return `${chart.bars.filter((b) => !b.spacer).length} bars × ${choruses}`
+    if (picking) return picking === 'first' ? 'Tap the first bar of the loop' : 'Now tap the last bar'
+    const extras = [
+      practice.keyStep && position && !position.countIn ? `in ${noteNameFor((chart.key + shownTranspose + 12) % 12)}` : '',
+      practice.ramp && position ? `${liveBpm} bpm` : '',
+    ]
+      .filter(Boolean)
+      .join('  ')
+    if (!position) return `${loopLabel ?? `${chart.bars.filter((b) => !b.spacer).length} bars`} × ${choruses}`
     if (position.countIn) return `Count-in  ${position.countIn}`
     if (position.ending) return 'Ending'
-    return `Chorus ${position.chorus + 1}/${choruses}  Bar ${position.measure + 1}`
+    return `Chorus ${position.chorus + 1}/${choruses}  Bar ${position.measure + 1}${extras ? `  ${extras}` : ''}`
   })()
 
   return (
@@ -284,9 +388,31 @@ export default function App() {
         </a>
         <span className="topbar-tag">Practice with a band in your browser</span>
         <span className="topbar-spacer" />
-        <button className="topbar-button" onClick={() => void share()} title="Copy a link to this chart">
-          {shareState === 'copied' ? 'Link copied' : shareState === 'failed' ? 'Copy failed' : 'Share'}
-        </button>
+        {!editing && (
+          <>
+            <button className="topbar-button" onClick={() => startEditing(tune)} title="Edit this chart">
+              Edit
+            </button>
+            <Popover id="share" className="share" label="Share">
+              {() => (
+                <div className="share-panel">
+                  <button className="share-option" onClick={() => void copy(() => shareUrl(chart), setShareState)}>
+                    <span className="share-name">
+                      {shareState === 'copied' ? 'Link copied' : shareState === 'failed' ? 'Copy failed' : 'Copy OpenStand link'}
+                    </span>
+                    <span className="share-desc">Opens this chart in OpenStand. Nothing is uploaded.</span>
+                  </button>
+                  <button className="share-option" onClick={() => void copy(() => irealLink([chart]), setIrealState)}>
+                    <span className="share-name">
+                      {irealState === 'copied' ? 'Link copied' : irealState === 'failed' ? 'Copy failed' : 'Copy iReal Pro link'}
+                    </span>
+                    <span className="share-desc">An irealb:// link that opens in iReal Pro.</span>
+                  </button>
+                </div>
+              )}
+            </Popover>
+          </>
+        )}
         <button className="tunes-toggle" aria-expanded={libraryOpen} onClick={() => setLibraryOpen(!libraryOpen)}>
           Tunes
         </button>
@@ -304,24 +430,46 @@ export default function App() {
           selectedId={tune.id}
           onSelect={selectSong}
           onImport={() => setImportOpen(true)}
+          onNew={() => startEditing(null)}
+          disabled={editing}
           onRemovePlaylist={(name) => {
             void removePlaylist(name)
             setTunes((all) => all.filter((t) => t.source === 'example' || t.playlist !== name))
           }}
         />
 
-        <main className="stage" onClick={() => setLibraryOpen(false)}>
+        <main
+          className={['stage', editing && 'stage-editing', picking && 'stage-picking'].filter(Boolean).join(' ')}
+          onClick={() => setLibraryOpen(false)}
+        >
           <Chart
             chart={chart}
             style={style}
-            transpose={transpose}
+            transpose={draft ? 0 : shownTranspose}
             activeMeasure={position && position.measure >= 0 ? position.measure : null}
             beatInBar={position?.beatInBar ?? 0}
             barBeats={position?.barBeats ?? 4}
+            range={picking && picking !== 'first' ? [picking.from, picking.from] : draft ? null : practice.loop}
+            selectedBar={draft ? editBar : null}
+            onBarClick={draft ? setEditBar : picking ? pickBar : undefined}
+            header={draft ? <EditorHeader chart={draft.chart} onChange={(c) => setDraft({ ...draft, chart: c })} /> : undefined}
           />
         </main>
       </div>
 
+      {draft ? (
+        <Editor
+          chart={draft.chart}
+          onChange={(c) => setDraft({ ...draft, chart: c })}
+          selected={editBar}
+          onSelect={setEditBar}
+          saveLabel={draft.from && draft.from.source !== 'example' ? 'Save' : 'Save to My tunes'}
+          canDelete={!!draft.from && draft.from.source !== 'example'}
+          onSave={() => void saveDraft()}
+          onCancel={() => setDraft(null)}
+          onDelete={() => void deleteDraftTune()}
+        />
+      ) : (
       <Transport
         readiness={readiness}
         playing={playing}
@@ -330,16 +478,18 @@ export default function App() {
         styleId={styleId}
         onStyle={(id) => {
           setBpm(getStyle(id).tempo.default)
-          changeArrangement({ styleId: id, transpose, choruses })
+          changeArrangement({ styleId: id })
         }}
         keyPc={keyPc}
-        onKey={(pc) => changeArrangement({ styleId, transpose: offsetToKey(chart.key, pc), choruses })}
+        onKey={(pc) => changeArrangement({ transpose: offsetToKey(chart.key, pc) })}
         bpm={bpm}
         bpmRange={BPM_RANGE}
         onBpm={setBpm}
         choruses={choruses}
-        onChoruses={(n) => changeArrangement({ styleId, transpose, choruses: n })}
+        maxChoruses={MAX_CHORUSES}
+        onChoruses={(n) => changeArrangement({ choruses: n })}
       >
+        <Practice chart={chart} settings={practice} onChange={changePractice} onPickLoop={() => setPicking('first')} />
         <Mixer
           labels={{ bass: 'Bass', comp: compLabel(style.comp.program), drums: 'Drums' }}
           volumes={volumes}
@@ -348,6 +498,7 @@ export default function App() {
           onMute={(part) => setMuted((all) => ({ ...all, [part]: !all[part] }))}
         />
       </Transport>
+      )}
 
       <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} onImport={importText} />
     </div>

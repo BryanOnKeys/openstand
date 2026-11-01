@@ -4,7 +4,7 @@ import { generateBass } from './bass'
 import { generateComp } from './comp'
 import { DRUM_CHANNEL, generateDrums } from './drums'
 import { writeMidi } from './midiWriter'
-import { buildTimeline, type Timeline } from './timeline'
+import { buildTimeline, type PracticeOptions, type Timeline } from './timeline'
 
 // Channel layout, shared with the mixer
 export const CHANNELS = { bass: 0, comp: 1, drums: DRUM_CHANNEL } as const
@@ -18,8 +18,14 @@ export interface Arrangement {
   timeline: Timeline
 }
 
-export function arrange(chart: Chart, style: StyleDefinition, transpose: number, choruses: number): Arrangement {
-  const timeline = buildTimeline(chart, transpose, choruses)
+export function arrange(
+  chart: Chart,
+  style: StyleDefinition,
+  transpose: number,
+  choruses: number,
+  practice: PracticeOptions = {},
+): Arrangement {
+  const timeline = buildTimeline(chart, transpose, choruses, practice)
   const { swing } = style
   const midi = writeMidi(BASE_BPM, [
     {

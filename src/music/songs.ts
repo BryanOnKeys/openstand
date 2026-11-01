@@ -7,7 +7,7 @@ import { chartFromMeasures, type Chart } from './chart'
 export interface Tune {
   id: string
   chart: Chart
-  source: 'example' | 'import' | 'link'
+  source: 'example' | 'import' | 'link' | 'own'
   playlist?: string
   addedAt: number
 }

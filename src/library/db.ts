@@ -40,3 +40,7 @@ export async function removePlaylist(playlist: string): Promise<void> {
 export async function removeTune(id: string): Promise<void> {
   await db.tunes.delete(id)
 }
+
+export async function saveTune(tune: Tune): Promise<void> {
+  await db.tunes.put(tune)
+}

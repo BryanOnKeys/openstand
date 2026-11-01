@@ -217,6 +217,15 @@ button:disabled {
   color: var(--ink-2);
 }
 
+.library-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.library[inert] {
+  opacity: 0.5;
+}
+
 .library-import,
 .library-remove,
 .button,
@@ -516,6 +525,42 @@ button:disabled {
   text-align: center;
 }
 
+/* A looped stretch is bracketed underneath, like a pencil mark */
+.bar-in-range::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  height: 7px;
+  border-bottom: 2px solid var(--ink-2);
+  opacity: 0.55;
+}
+
+.bar-clickable {
+  cursor: pointer;
+}
+
+.bar-clickable:hover {
+  background: color-mix(in srgb, var(--highlighter) 22%, transparent);
+}
+
+.bar-selected,
+.bar-selected:hover {
+  background: color-mix(in srgb, var(--highlighter) 40%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+}
+
+.stage-picking .bar-clickable:hover::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  height: 7px;
+  border-bottom: 2px solid var(--ink);
+}
+
 /* The current bar is marked the way a player would: a highlighter stroke, drawn as the bar plays */
 .bar-highlight {
   position: absolute;
@@ -762,14 +807,27 @@ input[type='range']::-moz-range-thumb {
   background: var(--control);
 }
 
-/* The mixer pops up above the transport */
-.band {
+/* Practice and the mixer pop up above the transport */
+.popover {
+  position: relative;
+}
+
+.practice {
   margin-left: auto;
 }
 
 .band-toggle:hover,
 .band-toggle[aria-expanded='true'] {
   border-color: var(--ink-2);
+}
+
+.band-toggle-active::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--highlighter);
 }
 
 .band-toggle svg {
@@ -783,18 +841,291 @@ input[type='range']::-moz-range-thumb {
 
 /* ---------- Mixer ---------- */
 
-.mixer {
+.popover-panel {
   position: absolute;
-  right: 16px;
-  bottom: calc(100% + 8px);
+  right: 0;
+  bottom: calc(100% + 18px);
   z-index: 10;
-  display: flex;
-  gap: 4px;
   padding: 14px 12px 12px;
   background: var(--paper);
   border: 1px solid var(--paper-edge);
   border-radius: 8px;
   box-shadow: 0 16px 40px -18px rgb(0 0 0 / 0.4);
+}
+
+.mixer {
+  display: flex;
+  gap: 4px;
+}
+
+/* ---------- Practice ---------- */
+
+.practice-panel {
+  display: grid;
+  gap: 16px;
+  width: 340px;
+  padding: 4px 6px;
+}
+
+.practice-row {
+  display: grid;
+  gap: 8px;
+}
+
+.practice-loop,
+.practice-sections {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.practice-value {
+  margin-right: auto;
+  font: 500 13px/1 var(--mono);
+}
+
+.practice-off {
+  color: var(--muted);
+}
+
+.practice-unit {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--control);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.chip:hover:not(:disabled) {
+  border-color: var(--ink-2);
+}
+
+.chip:disabled {
+  opacity: 0.45;
+}
+
+.chip[aria-pressed='true'],
+.chip-primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-ink);
+}
+
+.chip-danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.chip-meta {
+  font: 500 10.5px/1 var(--mono);
+  opacity: 0.6;
+}
+
+/* ---------- Share ---------- */
+
+.share .band-toggle {
+  height: 30px;
+  background: none;
+  color: var(--ink-2);
+}
+
+.share .popover-panel {
+  top: calc(100% + 8px);
+  bottom: auto;
+  z-index: 30;
+  padding: 6px;
+}
+
+.share-panel {
+  display: grid;
+  width: 290px;
+}
+
+.share-option {
+  display: grid;
+  gap: 2px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  text-align: left;
+}
+
+.share-option:hover {
+  background: var(--control);
+}
+
+.share-name {
+  font-weight: 500;
+}
+
+.share-desc {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---------- Editor ---------- */
+
+.editor {
+  display: grid;
+  gap: 12px;
+  max-height: 46dvh;
+  overflow: auto;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  background: var(--desk);
+}
+
+.editor-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px 14px;
+}
+
+.editor-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: center;
+}
+
+.editor-barno {
+  min-width: 7ch;
+  font: 500 13px/1 var(--mono);
+  text-align: center;
+}
+
+.editor-of {
+  color: var(--muted);
+}
+
+.icon-button:disabled {
+  opacity: 0.4;
+}
+
+.editor-chords {
+  display: grid;
+  gap: 5px;
+  flex: 1;
+  min-width: 240px;
+}
+
+.editor-input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  background: var(--paper);
+  font: 500 17px/1 var(--mono);
+}
+
+.editor-input:focus-visible {
+  outline-offset: 1px;
+}
+
+.editor-input-error {
+  border-color: var(--danger);
+}
+
+.editor-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.editor-hint-error {
+  color: var(--danger);
+}
+
+.editor-buttons {
+  display: flex;
+  gap: 6px;
+  align-self: start;
+  margin-top: 6px;
+}
+
+.editor-spacer {
+  flex: 1;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field-pair {
+  display: flex;
+  gap: 4px;
+}
+
+.field-text {
+  flex: 1;
+  min-width: 120px;
+  max-width: 220px;
+}
+
+.field-text .text-input {
+  width: 100%;
+}
+
+.text-input {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--control);
+}
+
+.text-input-number {
+  width: 76px;
+  font-family: var(--mono);
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  font-size: 13px;
+}
+
+.check input {
+  accent-color: var(--ink);
+}
+
+.sheet-input {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px dashed var(--line);
+  border-radius: 0;
+  background: none;
+  font-family: var(--script);
+}
+
+.sheet-input:focus-visible {
+  outline: none;
+  border-bottom-color: var(--ink);
+}
+
+input.sheet-title {
+  width: 100%;
+  text-decoration: none;
+}
+
+.sheet-head-edit {
+  grid-template-columns: 1fr minmax(0, 2fr) 1fr;
 }
 
 .strip {
@@ -967,7 +1298,27 @@ input.fader::-moz-range-thumb {
   }
 
   .topbar {
-    padding: 0 12px;
+    gap: 6px;
+    padding: 0 10px;
+  }
+
+  .topbar-link,
+  .topbar-button,
+  .tunes-toggle,
+  .share .band-toggle {
+    padding: 0 9px;
+  }
+
+  .wordmark {
+    margin-right: auto;
+  }
+
+  .topbar-spacer {
+    display: none;
+  }
+
+  .bar-pair .chord {
+    font-size: 19px;
   }
 
   .topbar-link-text {
@@ -1100,12 +1451,63 @@ input.fader::-moz-range-thumb {
     display: none;
   }
 
-  .band {
+  .practice {
     margin-left: 0;
   }
 
-  .mixer {
+  /* Panels span the screen, anchored to the transport (or the top bar) */
+  .popover {
+    position: static;
+  }
+
+  .popover-panel {
+    left: 12px;
     right: 12px;
+    bottom: calc(100% + 8px);
+    overflow-x: auto;
+  }
+
+  .practice-panel {
+    width: auto;
+  }
+
+  .mixer {
+    justify-content: center;
+  }
+
+  .topbar {
+    position: relative;
+  }
+
+  .share .popover-panel {
+    left: auto;
+  }
+
+  .editor {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .editor-chords {
+    order: -1;
+    flex-basis: 100%;
+  }
+
+  .editor-buttons {
+    margin: 0 0 0 auto;
+    align-self: center;
+  }
+
+  .sheet-head-edit {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .editor-hint {
+    display: none;
+  }
+
+  .editor-hint-error {
+    display: block;
   }
 }
 

@@ -8,6 +8,8 @@ interface LibraryProps {
   selectedId: string
   onSelect: (id: string) => void
   onImport: () => void
+  onNew: () => void
+  disabled?: boolean // while a chart is being edited
   onRemovePlaylist: (playlist: string) => void
 }
 
@@ -20,7 +22,7 @@ const fold = (s: string) =>
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
 
-export function Library({ tunes, selectedId, onSelect, onImport, onRemovePlaylist }: LibraryProps) {
+export function Library({ tunes, selectedId, onSelect, onImport, onNew, disabled, onRemovePlaylist }: LibraryProps) {
   const [query, setQuery] = useState('')
   const [playlist, setPlaylist] = useState(ALL)
   const [confirming, setConfirming] = useState(false)
@@ -39,14 +41,19 @@ export function Library({ tunes, selectedId, onSelect, onImport, onRemovePlaylis
   const canRemove = activePlaylist !== ALL && activePlaylist !== 'Examples'
 
   return (
-    <nav className="library" aria-label="Tunes">
+    <nav className="library" aria-label="Tunes" inert={disabled}>
       <div className="library-head">
         <h2 className="label">
           Tunes <span className="library-count">{matches.length}</span>
         </h2>
-        <button className="library-import" onClick={onImport}>
-          Import
-        </button>
+        <span className="library-actions">
+          <button className="library-import" onClick={onNew}>
+            New
+          </button>
+          <button className="library-import" onClick={onImport}>
+            Import
+          </button>
+        </span>
       </div>
 
       <input

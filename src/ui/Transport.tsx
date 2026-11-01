@@ -19,6 +19,7 @@ interface TransportProps {
   bpmRange: [number, number]
   onBpm: (bpm: number) => void
   choruses: number
+  maxChoruses: number
   onChoruses: (n: number) => void
   children?: ReactNode
 }
@@ -111,7 +112,7 @@ export function Transport(props: TransportProps) {
             −
           </button>
           <output className="stepper-value">{choruses}</output>
-          <button aria-label="More choruses" disabled={choruses >= 10} onClick={() => props.onChoruses(choruses + 1)}>
+          <button aria-label="More choruses" disabled={choruses >= props.maxChoruses} onClick={() => props.onChoruses(choruses + 1)}>
             +
           </button>
         </div>

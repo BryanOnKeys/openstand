@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from 'react'
+import { useMemo, type CSSProperties, type ReactNode } from 'react'
 import { ROW_CELLS, type Chart as ChartData, type ChartBar, type TimeSignature } from '../music/chart'
 import { keyPrefersFlats, noteName, parseChord, transposeChord, type Chord } from '../music/chords'
 import type { StyleDefinition } from '../styles/types'
@@ -14,6 +14,10 @@ interface ChartProps {
   activeMeasure: number | null
   beatInBar: number
   barBeats: number
+  range?: [number, number] | null // looped bars
+  selectedBar?: number | null // the bar being edited
+  onBarClick?: (index: number) => void
+  header?: ReactNode // replaces the title block, e.g. with inputs in the editor
 }
 
 interface PlacedBar {
@@ -67,9 +71,12 @@ interface BarProps {
   active: boolean
   progress: number
   showTime: TimeSignature | null
+  inRange: boolean
+  selected: boolean
+  onClick?: (index: number) => void
 }
 
-function Bar({ placed, prev, keyPc, active, progress, showTime }: BarProps) {
+function Bar({ placed, prev, keyPc, active, progress, showTime, inRange, selected, onClick }: BarProps) {
   const { bar, chords, column, closesRow, index } = placed
   const classes = ['bar']
   if (bar.spacer) classes.push('bar-spacer')
@@ -81,6 +88,11 @@ function Bar({ placed, prev, keyPc, active, progress, showTime }: BarProps) {
   else if (closesRow && !bar.spacer) classes.push('bar-close')
   if (showTime) classes.push('bar-with-time')
   if (chords.length > 2) classes.push('bar-dense')
+  else if (chords.length === 2 && bar.cells <= 4) classes.push('bar-pair')
+  if (inRange) classes.push('bar-in-range')
+  if (selected) classes.push('bar-selected')
+  if (onClick && !bar.spacer) classes.push('bar-clickable')
+  const interactive = onClick && !bar.spacer
 
   const style: CSSProperties = {
     gridColumn: `${column + 1} / span ${bar.cells}`,
@@ -92,7 +104,24 @@ function Bar({ placed, prev, keyPc, active, progress, showTime }: BarProps) {
     .join(' · ')
 
   return (
-    <div className={classes.join(' ')} style={style}>
+    <div
+      className={classes.join(' ')}
+      style={style}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-label={interactive ? `Bar ${index + 1}` : undefined}
+      aria-pressed={interactive ? selected : undefined}
+      onClick={interactive ? () => onClick(index) : undefined}
+      onKeyDown={
+        interactive
+          ? (e) => {
+              if (e.key !== 'Enter' && e.key !== ' ') return
+              e.preventDefault()
+              onClick(index)
+            }
+          : undefined
+      }
+    >
       {bar.rowStart && !bar.spacer && <span className="bar-number">{index + 1}</span>}
       {bar.section && (
         <span className="mark-section">{bar.section === 'i' ? 'Intro' : bar.section === 'v' ? 'Verse' : bar.section}</span>
@@ -138,18 +167,21 @@ function Bar({ placed, prev, keyPc, active, progress, showTime }: BarProps) {
   )
 }
 
-export function Chart({ chart, style, transpose, activeMeasure, beatInBar, barBeats }: ChartProps) {
+export function Chart(props: ChartProps) {
+  const { chart, style, transpose, activeMeasure, beatInBar, barBeats, range, selectedBar, onBarClick, header } = props
   const keyPc = (chart.key + transpose + 12) % 12
   const layout = useMemo(() => rows(chart, transpose), [chart, transpose])
   const keyName = prettyKey(noteName(keyPc, keyPrefersFlats(keyPc))) + (chart.minor ? '−' : '')
 
   return (
     <article className="sheet" aria-label={`${chart.title} chord chart`}>
-      <header className="sheet-head">
-        <span className="sheet-meta">({chart.sourceStyle ?? style.name})</span>
-        <h1 className="sheet-title">{chart.title}</h1>
-        <span className="sheet-meta sheet-meta-right">{chart.composer ?? `Key of ${keyName}`}</span>
-      </header>
+      {header ?? (
+        <header className="sheet-head">
+          <span className="sheet-meta">({chart.sourceStyle ?? style.name})</span>
+          <h1 className="sheet-title">{chart.title}</h1>
+          <span className="sheet-meta sheet-meta-right">{chart.composer ?? `Key of ${keyName}`}</span>
+        </header>
+      )}
 
       <div className="rows">
         {layout.map((row, r) => (
@@ -163,6 +195,9 @@ export function Chart({ chart, style, transpose, activeMeasure, beatInBar, barBe
                 active={activeMeasure === placed.index}
                 progress={Math.min(1, (beatInBar + 0.25) / barBeats)}
                 showTime={placed.index === 0 ? chart.time : (placed.bar.time ?? null)}
+                inRange={!!range && placed.index >= Math.min(...range) && placed.index <= Math.max(...range)}
+                selected={selectedBar === placed.index}
+                onClick={onBarClick}
               />
             ))}
           </div>

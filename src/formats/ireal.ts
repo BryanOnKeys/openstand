@@ -14,7 +14,7 @@ export interface IrealPlaylist {
   charts: Chart[]
 }
 
-const MUSIC_PREFIX = '1r34LbKcu7'
+export const MUSIC_PREFIX = '1r34LbKcu7'
 
 const NOTE_PC: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }
 
@@ -40,8 +40,8 @@ export function mapStyle(name: string, time: TimeSignature = [4, 4]): string {
   return inThree ? 'jazz-waltz' : 'medium-swing'
 }
 
-// Undo the irealb:// character scramble (applied to 50-character blocks)
-export function unscramble(s: string): string {
+// The irealb:// character scramble on 50-character blocks; the swap is its own inverse
+export function swapBlocks(s: string): string {
   let out = ''
   while (s.length > 51) {
     const block = s.slice(0, 50).split('')
@@ -57,8 +57,11 @@ export function unscramble(s: string): string {
     }
     out += swapped.join('')
   }
-  out += s
-  return out.replace(/Kcl/g, '| x').replace(/LZ/g, ' |').replace(/XyQ/g, '   ')
+  return out + s
+}
+
+export function unscramble(s: string): string {
+  return swapBlocks(s).replace(/Kcl/g, '| x').replace(/LZ/g, ' |').replace(/XyQ/g, '   ')
 }
 
 // iReal chord notation is close to ours; only a few spellings differ
@@ -239,7 +242,7 @@ function markSpacers(bars: ChartBar[]): ChartBar[] {
 }
 
 // Chord lengths from their cell positions within the bar
-function durations(cells: Cell[], time: TimeSignature): BarChord[] {
+export function durations(cells: Cell[], time: TimeSignature): BarChord[] {
   const barBeats = beatsPerBar(time)
   const positions = cells.flatMap((c, i) => (c.chord !== undefined ? [i] : []))
   if (positions.length === 0) return []
