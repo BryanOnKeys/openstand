@@ -1,0 +1,20 @@
+name: Feature idea
+description: Suggest something new for OpenStand
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: Describe the practice situation or problem, not only the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help?
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Sketches, other apps that do it well, links.

@@ -1,0 +1,28 @@
+name: Bug report
+description: Something doesn't work, looks broken, or crashes
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Share link
+      description: If it happens with a particular tune, press Share and paste the OpenStand link here.
+  - type: input
+    id: device
+    attributes:
+      label: Browser and device
+      placeholder: Chrome 140 on Android, Safari on iPhone 15, Firefox on Windows…
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Screenshots, error messages from the browser console, iReal Pro link that fails to import…

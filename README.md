@@ -1,5 +1,9 @@
 # OpenStand
 
+[![Open OpenStand](https://img.shields.io/badge/open-openstand--eta.vercel.app-1f1d1a)](https://openstand-eta.vercel.app)
+[![CI](https://github.com/canbmaj7/openstand/actions/workflows/ci.yml/badge.svg)](https://github.com/canbmaj7/openstand/actions/workflows/ci.yml)
+[![License: AGPL v3+](https://img.shields.io/badge/license-AGPL--3.0--or--later-1f1d1a)](LICENSE)
+
 **An open-source band that lives in your browser.** Pick a tune, set the key and tempo, and practice over a rhythm section — bass, piano and drums — generated live from a chord chart.
 
 > An open music stand: put a chart on it and the band starts playing.
@@ -7,6 +11,19 @@
 No install, no account, no subscription. Just open the page and play.
 
 **[Open OpenStand](https://openstand-eta.vercel.app)**
+
+![OpenStand playing a jazz blues: the current bar is highlighted, and changing the key re-spells every chord](docs/images/demo.gif)
+
+<table>
+  <tr>
+    <td width="70%"><img src="docs/images/editor.png" alt="The chart editor: chords typed as text, with section, repeat and ending options below" /></td>
+    <td width="30%"><img src="docs/images/phone-dark.png" alt="OpenStand on a phone in dark mode" /></td>
+  </tr>
+  <tr>
+    <td>Type chords the way you say them</td>
+    <td>On a phone, in dark mode</td>
+  </tr>
+</table>
 
 ---
 
@@ -73,13 +90,13 @@ Everything runs client-side. There is no server.
 src/
 ├── audio/      Sound bank loading, playback, mixer
 ├── engine/     Accompaniment engine (timeline, generators, MIDI writer)
-├── formats/    iReal Pro link reader, share links
+├── formats/    iReal Pro links in and out, share links
 ├── library/    Tune library stored in the browser (IndexedDB)
 ├── music/      Chart format, chord parsing, voicings, example tunes
 ├── styles/     Style format and the style library
-├── ui/         Chart, transport, library, mixer and import components
+├── ui/         Chart, editor, transport, library, practice and mixer components
 └── App.tsx     App state and playback wiring
-docs/           Chart format reference
+docs/           Chart format reference, README images
 scripts/        Sound bank build script
 soundbank-src/  Full GeneralUser GS bank the app's sound bank is built from
 tests/          Unit tests
@@ -131,10 +148,10 @@ Positions are in beats from the start of the bar or chord. Off-beat eighths are 
 
 OpenStand is meant to grow as a community project, and musicians are as welcome as developers.
 
-- **Musicians** — tell us where the band sounds stiff or wrong. Concrete notes help most: *"in a minor ii–V the bass lands on the wrong note in bar 3"*. New styles are the most valuable contribution — see [Styles](#styles).
-- **Developers** — pick an item from the roadmap or an open issue. Please open an issue before large changes so we can agree on the approach.
+- **Musicians:** tell us where the band sounds stiff or wrong with a [sound feedback issue](https://github.com/canbmaj7/openstand/issues/new?template=sound.yml). No code needed. New styles are the most valuable contribution, and they are data files, not code.
+- **Developers:** issues labelled [`good first issue`](https://github.com/canbmaj7/openstand/labels/good%20first%20issue) are small and say where to start.
 
-Before sending a pull request, make sure `npm run build`, `npm run lint` and `npm test` pass. All contributions must be your own work (or compatibly licensed, with attribution) and are released under the project license.
+[CONTRIBUTING.md](CONTRIBUTING.md) explains the setup, how to write a style, and what a pull request needs.
 
 ## Credits
 

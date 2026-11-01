@@ -1,0 +1,47 @@
+name: Sound feedback
+description: The band plays something a real player wouldn't. No code needed.
+labels: [sound]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for listening closely. The more concrete you are, the easier it is to fix: which instrument, which bar, and what a real player would do instead.
+  - type: dropdown
+    id: style
+    attributes:
+      label: Style
+      options:
+        - Medium Swing
+        - Ballad
+        - Jazz Waltz
+        - Bossa Nova
+        - Samba
+        - Pop Rock
+        - Funk
+        - Shuffle
+    validations:
+      required: true
+  - type: dropdown
+    id: instrument
+    attributes:
+      label: Instrument
+      multiple: true
+      options:
+        - Bass
+        - Piano / guitar
+        - Drums
+        - The mix (levels, sound)
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What sounds wrong, and what would a player do instead?
+      placeholder: "In a minor ii–V the bass lands on the natural 9 of the V chord in bar 3; a player would use the b9 or go to the root."
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Share link
+      description: Press Share in OpenStand and paste the link, so we hear the same tune, key and tempo.

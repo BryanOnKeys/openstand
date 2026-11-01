@@ -1,0 +1,28 @@
+name: Style request
+description: Ask for a new accompaniment style, or offer to write one
+labels: [style]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Style
+      placeholder: Reggae one-drop, Afro-Cuban 6/8, aksak 9/8…
+    validations:
+      required: true
+  - type: textarea
+    id: describe
+    attributes:
+      label: How does it go?
+      description: What the bass, chords and drums play, in words, beats or notation. Links to recordings you like are welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: tunes
+    attributes:
+      label: Tunes you'd practice with it
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Writing it
+      options:
+        - label: I'd like to write this style myself (see "Writing a style" in CONTRIBUTING.md)

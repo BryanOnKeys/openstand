@@ -201,6 +201,11 @@ button:disabled {
   border-right: 1px solid var(--line);
 }
 
+/* The column scrolls; nothing in it shrinks to make room */
+.library > * {
+  flex: none;
+}
+
 .library-head {
   display: flex;
   align-items: center;
@@ -1442,9 +1447,8 @@ input.fader::-moz-range-thumb {
   .controls {
     order: 3;
     flex-basis: 100%;
-    gap: 16px;
-    overflow-x: auto;
-    scrollbar-width: none;
+    flex-wrap: wrap;
+    gap: 10px 16px;
   }
 
   .control-tempo input[type='range'] {

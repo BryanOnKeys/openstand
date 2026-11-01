@@ -364,15 +364,16 @@ export default function App() {
   const readout = (() => {
     if (picking) return picking === 'first' ? 'Tap the first bar of the loop' : 'Now tap the last bar'
     const extras = [
-      practice.keyStep && position && !position.countIn ? `in ${noteNameFor((chart.key + shownTranspose + 12) % 12)}` : '',
-      practice.ramp && position ? `${liveBpm} bpm` : '',
+      practice.keyStep && position && !position.countIn ? `in\u00a0${noteNameFor((chart.key + shownTranspose + 12) % 12)}` : '',
+      practice.ramp && position ? `${liveBpm}\u00a0bpm` : '',
     ]
       .filter(Boolean)
       .join('  ')
     if (!position) return `${loopLabel ?? `${chart.bars.filter((b) => !b.spacer).length} bars`} × ${choruses}`
     if (position.countIn) return `Count-in  ${position.countIn}`
     if (position.ending) return 'Ending'
-    return `Chorus ${position.chorus + 1}/${choruses}  Bar ${position.measure + 1}${extras ? `  ${extras}` : ''}`
+    // Non-breaking spaces keep each part on one line when the readout wraps on phones
+    return `Chorus\u00a0${position.chorus + 1}/${choruses}  Bar\u00a0${position.measure + 1}${extras ? `  ${extras}` : ''}`
   })()
 
   return (
