@@ -11,8 +11,9 @@ interface LibraryProps {
 export function Library({ songs, selectedId, onSelect }: LibraryProps) {
   return (
     <nav className="library" aria-label="Tunes">
-      <h2 className="library-title">
-        Tunes <span className="library-count">{songs.length}</span>
+      <h2 className="library-head label">
+        <span>Tunes</span>
+        <span>{songs.length}</span>
       </h2>
       <ul className="library-list">
         {songs.map((song) => (

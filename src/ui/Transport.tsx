@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { keyPrefersFlats, noteName } from '../music/chords'
 import { STYLES } from '../styles'
 
@@ -19,6 +20,7 @@ interface TransportProps {
   onBpm: (bpm: number) => void
   choruses: number
   onChoruses: (n: number) => void
+  children?: ReactNode
 }
 
 export function Transport(props: TransportProps) {
@@ -48,15 +50,16 @@ export function Transport(props: TransportProps) {
         </button>
 
         <div className="readout">
-          {readiness.kind === 'loading' && <>Loading sounds · {Math.round(readiness.progress * 100)}%</>}
+          {readiness.kind === 'loading' && <>Loading sounds {Math.round(readiness.progress * 100)}%</>}
           {readiness.kind === 'error' && <span className="readout-error">{readiness.message}</span>}
           {readiness.kind === 'ready' && props.position}
         </div>
       </div>
 
+      <div className="controls">
       <label className="control">
-        <span className="control-label">Style</span>
-        <select value={props.styleId} onChange={(e) => props.onStyle(e.target.value)}>
+        <span className="label">Style</span>
+        <select className="select" value={props.styleId} onChange={(e) => props.onStyle(e.target.value)}>
           {STYLES.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
@@ -66,8 +69,8 @@ export function Transport(props: TransportProps) {
       </label>
 
       <label className="control">
-        <span className="control-label">Key</span>
-        <select value={props.keyPc} onChange={(e) => props.onKey(Number(e.target.value))}>
+        <span className="label">Key</span>
+        <select className="select" value={props.keyPc} onChange={(e) => props.onKey(Number(e.target.value))}>
           {Array.from({ length: 12 }, (_, pc) => (
             <option key={pc} value={pc}>
               {noteName(pc, keyPrefersFlats(pc))}
@@ -77,7 +80,7 @@ export function Transport(props: TransportProps) {
       </label>
 
       <div className="control control-tempo">
-        <span className="control-label" id="tempo-label">
+        <span className="label" id="tempo-label">
           Tempo
         </span>
         <div className="stepper">
@@ -100,7 +103,7 @@ export function Transport(props: TransportProps) {
       </div>
 
       <div className="control">
-        <span className="control-label" id="chorus-label">
+        <span className="label" id="chorus-label">
           Choruses
         </span>
         <div className="stepper" role="group" aria-labelledby="chorus-label">
@@ -113,6 +116,9 @@ export function Transport(props: TransportProps) {
           </button>
         </div>
       </div>
+      </div>
+
+      {props.children}
     </section>
   )
 }

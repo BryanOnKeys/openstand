@@ -12,17 +12,18 @@ No install, no account, no subscription. Just open the page and play.
 
 OpenStand is in an **early prototype** stage. What works today:
 
-- 🎼 **Chord charts** rendered as a 4-bar grid with the current bar highlighted while playing
-- 🎸 **Four styles** — Medium Swing, Ballad (brushes), Bossa Nova (nylon guitar) and Pop Rock. Switch styles while the band is playing.
-- 🎶 **Generated accompaniment**:
+- **Chord charts** rendered as a 4-bar grid with the current bar highlighted while playing
+- **Four styles** — Medium Swing, Ballad (brushes), Bossa Nova (nylon guitar) and Pop Rock. Switch styles while the band is playing.
+- **Generated accompaniment**:
   - **Bass** walks through chord tones in swing, or plays style patterns (bossa root–fifth, rock eighths), always approaching the next chord smoothly
   - **Piano / guitar** comps with rootless jazz voicings or close-position chords, choosing the shape closest to the previous one (voice leading)
   - **Drums** pick grooves by position in the form — a set-up on the first bar, two-bar figures in the middle, a fill on the last bar
   - Every chorus is played a little differently
-- 📄 **A real-looking lead sheet** — chord symbols typeset like a hand-copied chart (C−7, B♭7, Eø7, CΔ7), correct flat/sharp spelling in every key, and a progress line under the current bar
-- 🎚️ **Practice controls** — tempo (40–300 BPM, changes instantly), transpose to any key while playing, number of choruses, count-in, <kbd>Space</kbd> to play/stop
-- 🔊 **Mixer** — per-instrument volume and mute
-- 🎹 **Chord parser** for common jazz chart notation: `C-7`, `F7b9`, `Bb^7`, `Eh7`, `Do7`, `G7alt`, `C7sus`, slash chords (`G/B`)
+- **A real-looking lead sheet** — chord symbols in a handwritten jazz hand (Petaluma), like a hand-copied chart (C−7, B♭7, Eø7, CΔ7), correct flat/sharp spelling in every key, and the current bar marked with a highlighter stroke as it plays
+- **Practice controls** — tempo (40–300 BPM, changes instantly), transpose to any key while playing, number of choruses, count-in, <kbd>Space</kbd> to play/stop
+- **Mixer** — per-instrument volume and mute
+- **Light and dark** themes that follow your system setting
+- **Chord parser** for common jazz chart notation: `C-7`, `F7b9`, `Bb^7`, `Eh7`, `Do7`, `G7alt`, `C7sus`, slash chords (`G/B`)
 
 ## Quick start
 
@@ -47,7 +48,7 @@ Open <http://localhost:5173> and press ▶. The first load downloads a ~32 MB so
 ## How it works
 
 ```
-chord chart + style ──▶ timeline ──▶ bass / comp / drums generators ──▶ Standard MIDI file ──▶ SoundFont synth ──▶ 🔈
+chord chart + style ──▶ timeline ──▶ bass / comp / drums generators ──▶ Standard MIDI file ──▶ SoundFont synth ──▶ audio
 ```
 
 1. **Timeline** (`src/engine/timeline.ts`) — expands the chart into chord slots (count-in, N choruses, final resolution to the tonic).
@@ -101,7 +102,7 @@ Positions are in beats from the start of the bar or chord. Off-beat eighths are 
 - [ ] More styles: even 8ths, funk, samba, Afro-Cuban, waltz, shuffle — and beyond (Balkan, Turkish *usul*, Afrobeat…)
 - [ ] Load styles from JSON / MIDI files so new grooves need no build step
 - [ ] Chart editor and a library of tunes stored locally (IndexedDB)
-- [ ] Import/export of common chord-chart formats
+- [ ] Import iReal Pro share links (`irealb://`) and export/import of other chord-chart formats (ChordPro, MusicXML)
 - [ ] Practice modes: tempo ramp per chorus, loop a section, cycle through all 12 keys
 - [ ] Chord helper: piano keyboard, guitar diagrams, scale suggestions
 - [ ] Export to WAV / MIDI / PDF
@@ -120,7 +121,8 @@ Before sending a pull request, make sure `npm run build` and `npm run lint` pass
 ## Credits
 
 - [SpessaSynth](https://github.com/spessasus/spessasynth_lib) by spessasus — SoundFont synthesizer and MIDI sequencer (Apache-2.0)
-- [Fraunces](https://github.com/undercasetype/Fraunces) and [Instrument Sans](https://github.com/Instrument/instrument-sans) — typefaces (SIL Open Font License)
+- [Petaluma](https://github.com/steinbergmedia/petaluma) by Steinberg — handwritten music font used for the chart (SIL Open Font License 1.1, see `src/assets/fonts/Petaluma-OFL.txt`)
+- [IBM Plex Sans and Plex Mono](https://github.com/IBM/plex) — interface typefaces (SIL Open Font License 1.1)
 - [GeneralUser GS](https://www.schristiancollins.com/generaluser.php) by S. Christian Collins — sound bank (see `public/soundfonts/GeneralUser-GS-LICENSE.txt`)
 
 ## License
