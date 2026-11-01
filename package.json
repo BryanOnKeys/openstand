@@ -7,11 +7,14 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run tests",
+    "soundbank": "node scripts/build-soundbank.mjs"
   },
   "dependencies": {
     "@fontsource-variable/ibm-plex-sans": "^5.3.0",
     "@fontsource/ibm-plex-mono": "^5.3.0",
+    "dexie": "^4.4.7",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "spessasynth_core": "^4.4.4",
@@ -24,7 +27,8 @@
     "@vitejs/plugin-react": "^6.1.2",
     "oxlint": "^1.89.0",
     "typescript": "~7.0.2",
-    "vite": "^8.3.5"
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
   },
   "license": "AGPL-3.0-or-later",
   "description": "Open-source, browser-based play-along band: chord charts with auto-generated bass, piano and drums.",

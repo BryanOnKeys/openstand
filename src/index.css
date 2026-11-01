@@ -9,11 +9,11 @@
   font-display: block;
 }
 
-/* Only the SMuFL chord-symbol and accidental glyphs are taken from Petaluma Text */
+/* Petaluma Text supplies the SMuFL glyphs: chord symbols, accidentals, repeats, segno, coda */
 @font-face {
   font-family: 'Petaluma Text';
   src: url('./assets/fonts/PetalumaText.woff2') format('woff2');
-  unicode-range: U+E870-E87F, U+ED60-ED6F;
+  unicode-range: U+E000-F8FF;
   font-display: block;
 }
 
@@ -160,6 +160,7 @@ button:disabled {
 }
 
 .topbar-link,
+.topbar-button,
 .tunes-toggle {
   display: inline-flex;
   align-items: center;
@@ -174,6 +175,7 @@ button:disabled {
 }
 
 .topbar-link:hover,
+.topbar-button:hover,
 .tunes-toggle:hover {
   color: var(--ink);
   border-color: var(--ink-2);
@@ -192,16 +194,86 @@ button:disabled {
 /* ---------- Library ---------- */
 
 .library {
+  display: flex;
+  flex-direction: column;
   overflow: auto;
   padding: 24px 12px 24px 20px;
   border-right: 1px solid var(--line);
 }
 
 .library-head {
-  margin: 0;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 0 10px 12px;
+  padding: 0 0 12px 10px;
+}
+
+.library-head h2 {
+  margin: 0;
+}
+
+.library-count {
+  margin-left: 6px;
+  color: var(--ink-2);
+}
+
+.library-import,
+.library-remove,
+.button,
+.file-button {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--control);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.library-import:hover,
+.library-remove:hover,
+.button:hover,
+.file-button:hover {
+  border-color: var(--ink-2);
+}
+
+.library-remove-confirm {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.library-search {
+  width: 100%;
+  height: 32px;
+  margin-bottom: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+}
+
+.library-search:focus-visible {
+  outline-offset: 0;
+}
+
+.library-filter {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.library-filter .select {
+  flex: 1;
+  min-width: 0;
+}
+
+.library-more {
+  padding: 8px 10px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .library-list {
@@ -283,54 +355,89 @@ button:disabled {
   text-align: right;
 }
 
-.bars {
+.rows {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  row-gap: 30px;
+  row-gap: 42px;
+}
+
+/* A row of 16 cells, as on an iReal Pro chart; a 4/4 bar is usually 4 cells */
+.row {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
 }
 
 .bar {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(var(--chords), minmax(0, 1fr));
   align-items: center;
+  column-gap: 0.4em;
   min-height: 84px;
-  padding: 0 14px;
-  border-left: 2px solid var(--ink);
+  padding: 0 10px;
+  border-left: 1.5px solid var(--ink);
 }
 
-.bar:nth-child(4n),
-.bar:last-child {
-  border-right: 2px solid var(--ink);
+.bar-no-left,
+.bar-repeat-start,
+.bar-spacer {
+  border-left-color: transparent;
 }
 
-.bar:nth-child(4n) + .bar {
-  border-left-width: 2px;
+.bar-close {
+  border-right: 1.5px solid var(--ink);
 }
 
-.bar:nth-child(4n + 2),
-.bar:nth-child(4n + 3),
-.bar:nth-child(4n + 4) {
-  border-left-width: 1.5px;
+.bar-with-time {
+  padding-left: 44px;
 }
 
-.bar-first {
-  padding-left: 52px;
+.bar-repeat-start {
+  padding-left: 30px;
 }
 
-.bar.bar-final {
-  border-right: 0;
+.bar-repeat-start.bar-with-time {
+  padding-left: 62px;
 }
 
+.bar-repeat-start.bar-with-time .timesig {
+  left: 30px;
+}
+
+.bar-double::after,
 .bar-final::after {
   content: '';
   position: absolute;
   top: 0;
   bottom: 0;
   right: 0;
-  width: 9px;
+  width: 6px;
+  border-right: 1.5px solid var(--ink);
   border-left: 1.5px solid var(--ink);
-  border-right: 5px solid var(--ink);
+}
+
+.bar-final::after {
+  width: 8px;
+  border-right-width: 5px;
+}
+
+.glyph-repeat {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  font-family: 'Petaluma Text';
+  font-size: 30px;
+  line-height: 1;
+}
+
+.glyph-repeat-left {
+  left: -2px;
+}
+
+.glyph-repeat-right {
+  right: -2px;
+}
+
+.bar-dense .chord {
+  font-size: 0.72em;
 }
 
 .bar-number {
@@ -339,6 +446,63 @@ button:disabled {
   left: -2px;
   font: 500 11px/1 var(--mono);
   color: var(--muted);
+}
+
+.mark-section {
+  position: absolute;
+  top: -30px;
+  left: -14px;
+  min-width: 26px;
+  padding: 2px 6px 0;
+  border: 2px solid var(--ink);
+  border-radius: 3px 6px 2px 5px;
+  background: var(--paper);
+  font-size: 20px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.mark-section + .bar-number {
+  display: none;
+}
+
+.mark-ending {
+  position: absolute;
+  top: -22px;
+  left: -1px;
+  right: 30%;
+  padding: 0 0 0 6px;
+  border-top: 1.5px solid var(--ink);
+  border-left: 1.5px solid var(--ink);
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.mark-sign {
+  position: absolute;
+  top: -26px;
+  left: 30px;
+  font-family: 'Petaluma Text';
+  font-size: 20px;
+  line-height: 1;
+}
+
+.mark-fermata {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  font-family: 'Petaluma Text';
+  font-size: 18px;
+  line-height: 1;
+}
+
+.mark-text {
+  position: absolute;
+  bottom: -22px;
+  left: 8px;
+  font-size: 16px;
+  white-space: nowrap;
+  color: var(--ink-2);
 }
 
 .timesig {
@@ -376,7 +540,7 @@ button:disabled {
 }
 
 .chord-quality {
-  font-size: 0.62em;
+  font-size: 0.72em;
   margin-left: 0.04em;
 }
 
@@ -394,6 +558,10 @@ button:disabled {
 .chord-bass {
   font-size: 0.62em;
   margin-left: 0.04em;
+}
+
+.chord.chord-nc {
+  font-size: 28px;
 }
 
 .chord-unknown {
@@ -689,6 +857,84 @@ input.fader::-moz-range-thumb {
   opacity: 0.35;
 }
 
+/* ---------- Dialog ---------- */
+
+.dialog {
+  width: min(560px, calc(100vw - 24px));
+  padding: 24px;
+  border: 1px solid var(--paper-edge);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 24px 60px -20px rgb(0 0 0 / 0.5);
+}
+
+.dialog::backdrop {
+  background: rgb(20 18 15 / 0.45);
+}
+
+.dialog-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.dialog-text {
+  margin: 0 0 14px;
+  color: var(--ink-2);
+}
+
+.dialog-text code {
+  font: 500 12.5px var(--mono);
+}
+
+.dialog-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--control);
+  font: 12.5px/1.4 var(--mono);
+  resize: vertical;
+}
+
+.dialog-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.dialog-spacer {
+  flex: 1;
+}
+
+.file-button input {
+  display: none;
+}
+
+.button-primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-ink);
+}
+
+.button-primary:hover {
+  border-color: var(--ink);
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.dialog-status {
+  margin: 12px 0 0;
+}
+
+.dialog-status-error {
+  color: var(--danger);
+}
+
 /* ---------- Narrow screens ---------- */
 
 @media (max-width: 1100px) {
@@ -771,8 +1017,8 @@ input.fader::-moz-range-thumb {
     font-size: 16px;
   }
 
-  .bars {
-    row-gap: 22px;
+  .rows {
+    row-gap: 26px;
   }
 
   .bar {
@@ -780,8 +1026,42 @@ input.fader::-moz-range-thumb {
     padding: 0 6px;
   }
 
-  .bar-first {
-    padding-left: 30px;
+  .bar-with-time {
+    padding-left: 24px;
+  }
+
+  .bar-repeat-start {
+    padding-left: 16px;
+  }
+
+  .bar-repeat-start.bar-with-time {
+    padding-left: 36px;
+  }
+
+  .bar-repeat-start.bar-with-time .timesig {
+    left: 16px;
+  }
+
+  .glyph-repeat {
+    font-size: 20px;
+  }
+
+  .mark-section {
+    top: -24px;
+    left: -8px;
+    min-width: 20px;
+    font-size: 15px;
+  }
+
+  .mark-sign {
+    top: -20px;
+    left: 18px;
+    font-size: 15px;
+  }
+
+  .mark-text {
+    bottom: -20px;
+    font-size: 13px;
   }
 
   .timesig {

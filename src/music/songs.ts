@@ -1,16 +1,27 @@
 // Example tunes. All are generic, copyright-free chord progressions.
 // Each measure is a list of chords: 1 chord = 4 beats, 2 chords = 2+2, 4 chords = 1 beat each.
 
-export interface Song {
+import { chartFromMeasures, type Chart } from './chart'
+
+// A tune in the library: a chart plus where it came from
+export interface Tune {
+  id: string
+  chart: Chart
+  source: 'example' | 'import' | 'link'
+  playlist?: string
+  addedAt: number
+}
+
+interface Example {
   id: string
   title: string
-  key: number // pitch class of the original key
-  style: string // default style id
+  key: number
+  style: string
   bpm: number
   measures: string[][]
 }
 
-export const SONGS: Song[] = [
+const RAW: Example[] = [
   {
     id: 'jazz-blues-f',
     style: 'medium-swing',
@@ -154,3 +165,11 @@ export const SONGS: Song[] = [
     measures: [['A7'], ['A7'], ['A7'], ['A7'], ['D7'], ['D7'], ['A7'], ['A7'], ['E7'], ['D7'], ['A7'], ['E7']],
   },
 ]
+
+export const EXAMPLES: Tune[] = RAW.map(({ id, measures, ...meta }) => ({
+  id,
+  chart: chartFromMeasures(meta, measures),
+  source: 'example',
+  playlist: 'Examples',
+  addedAt: 0,
+}))

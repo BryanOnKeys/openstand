@@ -2,9 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Player } from './audio/player'
 import { arrange, BASE_BPM, CHANNELS, type Part } from './engine/arrange'
 import { COUNT_IN_BEATS, type Timeline } from './engine/timeline'
-import { SONGS } from './music/songs'
+import { parseIrealLinks } from './formats/ireal'
+import { chartFromHash, shareUrl } from './formats/share'
+import { addTunes, loadTunes, removePlaylist } from './library/db'
+import { EXAMPLES, type Tune } from './music/songs'
 import { getStyle } from './styles'
 import { Chart } from './ui/Chart'
+import { ImportDialog, type ImportResult } from './ui/ImportDialog'
 import { Library } from './ui/Library'
 import { Mixer } from './ui/Mixer'
 import { Transport, type Readiness } from './ui/Transport'
@@ -15,6 +19,7 @@ interface Position {
   beatInBar: number
   countIn: number // 1-4 during the count-in, otherwise 0
   ending: boolean
+  barBeats: number
 }
 
 interface ArrangeOptions {
@@ -29,16 +34,25 @@ const BPM_RANGE: [number, number] = [40, 300]
 const offsetToKey = (from: number, to: number) => ((to - from + 17) % 12) - 5
 
 // The comp instrument is named after the style's General MIDI program
+const LAST_TUNE = 'openstand:last-tune'
+
 const compLabel = (program: number) => (program >= 24 && program <= 31 ? 'Guitar' : 'Piano')
 
 function positionAt(timeline: Timeline, beat: number): Position | null {
   if (beat < COUNT_IN_BEATS) {
-    return { measure: -1, chorus: 0, beatInBar: beat, countIn: Math.floor(beat) + 1, ending: false }
+    return { measure: -1, chorus: 0, beatInBar: beat, countIn: Math.floor(beat) + 1, ending: false, barBeats: 4 }
   }
   const bar = timeline.bars.findLast((b) => b.start <= beat)
   if (!bar) return null
   const chorus = timeline.slots.findLast((s) => s.start <= beat)?.chorus ?? 0
-  return { measure: bar.measure, chorus, beatInBar: beat - bar.start, countIn: 0, ending: bar.measure === -1 }
+  return {
+    measure: bar.measure,
+    chorus,
+    beatInBar: beat - bar.start,
+    countIn: 0,
+    ending: bar.measure === -1,
+    barBeats: bar.beats,
+  }
 }
 
 export default function App() {
@@ -46,10 +60,13 @@ export default function App() {
   const timelineRef = useRef<Timeline | null>(null)
 
   const [readiness, setReadiness] = useState<Readiness>({ kind: 'loading', progress: 0 })
-  const [songId, setSongId] = useState(SONGS[0].id)
-  const [styleId, setStyleId] = useState(SONGS[0].style)
+  const [tunes, setTunes] = useState<Tune[]>(EXAMPLES)
+  const [songId, setSongId] = useState(EXAMPLES[0].id)
+  const [styleId, setStyleId] = useState(EXAMPLES[0].chart.style)
   const [transpose, setTranspose] = useState(0)
-  const [bpm, setBpm] = useState(SONGS[0].bpm)
+  const [bpm, setBpm] = useState(EXAMPLES[0].chart.bpm)
+  const [importOpen, setImportOpen] = useState(false)
+  const [shareState, setShareState] = useState<'idle' | 'copied' | 'failed'>('idle')
   const [choruses, setChoruses] = useState(3)
   const [playing, setPlaying] = useState(false)
   const [position, setPosition] = useState<Position | null>(null)
@@ -57,9 +74,10 @@ export default function App() {
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [muted, setMuted] = useState<Record<Part, boolean>>({ bass: false, comp: false, drums: false })
 
-  const song = SONGS.find((s) => s.id === songId) ?? SONGS[0]
+  const tune = tunes.find((t) => t.id === songId) ?? tunes[0] ?? EXAMPLES[0]
+  const chart = tune.chart
   const style = getStyle(styleId)
-  const keyPc = (song.key + transpose + 12) % 12
+  const keyPc = (chart.key + transpose + 12) % 12
 
   useEffect(() => {
     // The effect may run twice (StrictMode); a discarded player must not update the UI
@@ -96,7 +114,7 @@ export default function App() {
   const start = async (opts: ArrangeOptions, fromSeconds = 0) => {
     const player = playerRef.current
     if (!player) return
-    const { midi, timeline } = arrange(song, getStyle(opts.styleId), opts.transpose, opts.choruses)
+    const { midi, timeline } = arrange(chart, getStyle(opts.styleId), opts.transpose, opts.choruses)
     timelineRef.current = timeline
     await player.play(midi, fromSeconds)
     player.setRate(bpm / BASE_BPM)
@@ -150,18 +168,89 @@ export default function App() {
     return () => cancelAnimationFrame(frame)
   }, [playing])
 
-  const selectSong = (id: string) => {
-    stop()
-    const next = SONGS.find((s) => s.id === id) ?? SONGS[0]
+  const showTune = useCallback((next: Tune) => {
+    playerRef.current?.stop()
+    setPlaying(false)
+    setPosition(null)
     setSongId(next.id)
-    setStyleId(next.style)
+    setStyleId(next.chart.style)
     setTranspose(0)
-    setBpm(next.bpm)
+    setBpm(next.chart.bpm)
     setLibraryOpen(false)
+    localStorage.setItem(LAST_TUNE, next.id)
+  }, [])
+
+  const selectSong = (id: string) => {
+    const next = tunes.find((t) => t.id === id)
+    if (next) showTune(next)
+  }
+
+  // Load the saved library, then open a shared tune from the URL or the last tune played
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const saved = await loadTunes().catch(() => [] as Tune[])
+      let all = [...EXAMPLES, ...saved]
+      const shared = await chartFromHash(window.location.hash)
+      let open: Tune | undefined
+      if (shared) {
+        const [added] = await addTunes([shared], 'link', 'Shared with me')
+        all = [...all.filter((t) => t.id !== added.id), added]
+        open = added
+        history.replaceState(null, '', window.location.pathname)
+      } else {
+        open = all.find((t) => t.id === localStorage.getItem(LAST_TUNE))
+      }
+      if (cancelled) return
+      setTunes(all)
+      if (open) showTune(open)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [showTune])
+
+  const importText = useCallback(
+    async (text: string): Promise<ImportResult> => {
+      const lists = parseIrealLinks(text)
+      const added: Tune[] = []
+      for (const list of lists) added.push(...(await addTunes(list.charts, 'import', list.name)))
+      if (added.length) {
+        const ids = new Set(added.map((t) => t.id))
+        setTunes((all) => [...all.filter((t) => !ids.has(t.id)), ...added])
+        showTune(added[0])
+      }
+      return { tunes: added.length, playlists: [...new Set(lists.filter((l) => l.charts.length).map((l) => l.name))] }
+    },
+    [showTune],
+  )
+
+  // Pasting an iReal Pro link anywhere outside a text field imports it
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const target = e.target as HTMLElement
+      if (target.closest('input, textarea')) return
+      const text = e.clipboardData?.getData('text') ?? ''
+      if (!/irealb(ook)?:\/\//.test(text)) return
+      e.preventDefault()
+      void importText(text)
+    }
+    window.addEventListener('paste', onPaste)
+    return () => window.removeEventListener('paste', onPaste)
+  }, [importText])
+
+  const share = async () => {
+    try {
+      await navigator.clipboard.writeText(await shareUrl(chart))
+      setShareState('copied')
+    } catch {
+      setShareState('failed')
+    }
+    setTimeout(() => setShareState('idle'), 2200)
   }
 
   const readout = (() => {
-    if (!position) return `${song.measures.length} bars × ${choruses}`
+    if (!position) return `${chart.bars.filter((b) => !b.spacer).length} bars × ${choruses}`
     if (position.countIn) return `Count-in  ${position.countIn}`
     if (position.ending) return 'Ending'
     return `Chorus ${position.chorus + 1}/${choruses}  Bar ${position.measure + 1}`
@@ -180,6 +269,9 @@ export default function App() {
         </a>
         <span className="topbar-tag">Practice with a band in your browser</span>
         <span className="topbar-spacer" />
+        <button className="topbar-button" onClick={() => void share()} title="Copy a link to this chart">
+          {shareState === 'copied' ? 'Link copied' : shareState === 'failed' ? 'Copy failed' : 'Share'}
+        </button>
         <button className="tunes-toggle" aria-expanded={libraryOpen} onClick={() => setLibraryOpen(!libraryOpen)}>
           Tunes
         </button>
@@ -192,15 +284,25 @@ export default function App() {
       </header>
 
       <div className={libraryOpen ? 'workspace library-open' : 'workspace'}>
-        <Library songs={SONGS} selectedId={songId} onSelect={selectSong} />
+        <Library
+          tunes={tunes}
+          selectedId={tune.id}
+          onSelect={selectSong}
+          onImport={() => setImportOpen(true)}
+          onRemovePlaylist={(name) => {
+            void removePlaylist(name)
+            setTunes((all) => all.filter((t) => t.source === 'example' || t.playlist !== name))
+          }}
+        />
 
         <main className="stage" onClick={() => setLibraryOpen(false)}>
           <Chart
-            song={song}
+            chart={chart}
             style={style}
             transpose={transpose}
             activeMeasure={position && position.measure >= 0 ? position.measure : null}
             beatInBar={position?.beatInBar ?? 0}
+            barBeats={position?.barBeats ?? 4}
           />
         </main>
       </div>
@@ -216,7 +318,7 @@ export default function App() {
           changeArrangement({ styleId: id, transpose, choruses })
         }}
         keyPc={keyPc}
-        onKey={(pc) => changeArrangement({ styleId, transpose: offsetToKey(song.key, pc), choruses })}
+        onKey={(pc) => changeArrangement({ styleId, transpose: offsetToKey(chart.key, pc), choruses })}
         bpm={bpm}
         bpmRange={BPM_RANGE}
         onBpm={setBpm}
@@ -231,6 +333,8 @@ export default function App() {
           onMute={(part) => setMuted((all) => ({ ...all, [part]: !all[part] }))}
         />
       </Transport>
+
+      <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} onImport={importText} />
     </div>
   )
 }

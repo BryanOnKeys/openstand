@@ -1,4 +1,4 @@
-import type { Song } from '../music/songs'
+import type { Chart } from '../music/chart'
 import type { StyleDefinition } from '../styles/types'
 import { generateBass } from './bass'
 import { generateComp } from './comp'
@@ -18,8 +18,8 @@ export interface Arrangement {
   timeline: Timeline
 }
 
-export function arrange(song: Song, style: StyleDefinition, transpose: number, choruses: number): Arrangement {
-  const timeline = buildTimeline(song, transpose, choruses)
+export function arrange(chart: Chart, style: StyleDefinition, transpose: number, choruses: number): Arrangement {
+  const timeline = buildTimeline(chart, transpose, choruses)
   const { swing } = style
   const midi = writeMidi(BASE_BPM, [
     {

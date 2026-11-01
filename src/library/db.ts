@@ -1,0 +1,37 @@
+// The tune library, stored in the browser (IndexedDB). Nothing leaves the device.
+
+import Dexie, { type EntityTable } from 'dexie'
+import type { Chart } from '../music/chart'
+import type { Tune } from '../music/songs'
+
+const db = new Dexie('openstand') as Dexie & { tunes: EntityTable<Tune, 'id'> }
+
+db.version(1).stores({ tunes: 'id, playlist, addedAt' })
+
+export async function loadTunes(): Promise<Tune[]> {
+  return db.tunes.orderBy('addedAt').toArray()
+}
+
+// A stable id from the chart's content, so importing the same tune twice doesn't duplicate it
+export async function chartId(chart: Chart): Promise<string> {
+  const data = new TextEncoder().encode(JSON.stringify(chart))
+  const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', data))
+  return Array.from(hash.slice(0, 9), (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+export async function addTunes(charts: Chart[], source: Tune['source'], playlist: string): Promise<Tune[]> {
+  const now = Date.now()
+  const tunes = await Promise.all(
+    charts.map(async (chart, i): Promise<Tune> => ({ id: await chartId(chart), chart, source, playlist, addedAt: now + i })),
+  )
+  await db.tunes.bulkPut(tunes)
+  return tunes
+}
+
+export async function removePlaylist(playlist: string): Promise<void> {
+  await db.tunes.where('playlist').equals(playlist).delete()
+}
+
+export async function removeTune(id: string): Promise<void> {
+  await db.tunes.delete(id)
+}

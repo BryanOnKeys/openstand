@@ -1,74 +1,172 @@
 import { useMemo, type CSSProperties } from 'react'
-import { keyPrefersFlats, noteName, parseChord, transposeChord } from '../music/chords'
-import type { Song } from '../music/songs'
+import { ROW_CELLS, type Chart as ChartData, type ChartBar, type TimeSignature } from '../music/chart'
+import { keyPrefersFlats, noteName, parseChord, transposeChord, type Chord } from '../music/chords'
 import type { StyleDefinition } from '../styles/types'
 import { ChordSymbol } from './ChordSymbol'
 
-const BARS_PER_ROW = 4
+// SMuFL glyphs from Petaluma Text
+const GLYPH = { repeatLeft: '', repeatRight: '', segno: '', coda: '', fermata: '' }
 
 interface ChartProps {
-  song: Song
+  chart: ChartData
   style: StyleDefinition
   transpose: number
   activeMeasure: number | null
   beatInBar: number
+  barBeats: number
+}
+
+interface PlacedBar {
+  index: number
+  bar: ChartBar
+  column: number
+  chords: { chord: Chord | null; symbol: string | null; beats: number }[]
+  closesRow: boolean
 }
 
 const prettyKey = (name: string) => name.replace('b', '♭').replace('#', '♯')
 
-export function Chart({ song, style, transpose, activeMeasure, beatInBar }: ChartProps) {
-  const keyPc = (song.key + transpose + 12) % 12
+function rows(chart: ChartData, transpose: number): PlacedBar[][] {
+  const out: PlacedBar[][] = []
+  let row: PlacedBar[] = []
+  let column = 0
+  // Charts without row information get four bars to a row
+  const hasRows = chart.bars.some((b) => b.rowStart)
+  chart.bars.forEach((bar, index) => {
+    const startsRow = hasRows ? Boolean(bar.rowStart) : index % 4 === 0
+    if (row.length && (startsRow || column + bar.cells > ROW_CELLS)) {
+      out.push(row)
+      row = []
+      column = 0
+    }
+    const chords = bar.chords.map(({ symbol, beats }) => {
+      const parsed = symbol ? parseChord(symbol) : null
+      return { symbol, beats, chord: parsed ? transposeChord(parsed, transpose) : null }
+    })
+    row.push({ index, bar, column, chords, closesRow: false })
+    column += bar.cells
+  })
+  if (row.length) out.push(row)
+  for (const r of out) r[r.length - 1].closesRow = true
+  return out
+}
 
-  const measures = useMemo(
-    () =>
-      song.measures.map((m) =>
-        m.map((symbol) => {
-          const chord = parseChord(symbol)
-          return { symbol, chord: chord ? transposeChord(chord, transpose) : null }
-        }),
-      ),
-    [song, transpose],
+function TimeSig({ time }: { time: TimeSignature }) {
+  return (
+    <span className="timesig" aria-label={`${time[0]}/${time[1]} time`}>
+      <span>{time[0]}</span>
+      <span>{time[1]}</span>
+    </span>
   )
+}
+
+interface BarProps {
+  placed: PlacedBar
+  prev: PlacedBar | undefined
+  keyPc: number
+  active: boolean
+  progress: number
+  showTime: TimeSignature | null
+}
+
+function Bar({ placed, prev, keyPc, active, progress, showTime }: BarProps) {
+  const { bar, chords, column, closesRow, index } = placed
+  const classes = ['bar']
+  if (bar.spacer) classes.push('bar-spacer')
+  // The previous bar already drew a special closing barline on this edge
+  if (bar.repeatStart) classes.push('bar-repeat-start')
+  else if (prev && (prev.bar.barline || prev.bar.repeatEnd)) classes.push('bar-no-left')
+  if (bar.repeatEnd) classes.push('bar-repeat-end')
+  else if (bar.barline) classes.push(`bar-${bar.barline}`)
+  else if (closesRow && !bar.spacer) classes.push('bar-close')
+  if (showTime) classes.push('bar-with-time')
+  if (chords.length > 2) classes.push('bar-dense')
+
+  const style: CSSProperties = {
+    gridColumn: `${column + 1} / span ${bar.cells}`,
+    gridTemplateColumns: chords.map((c) => `${c.beats}fr`).join(' ') || '1fr',
+  }
+
+  const note = [bar.comment, bar.directive, bar.repeatTimes && bar.repeatTimes > 2 ? `${bar.repeatTimes}x` : '']
+    .filter(Boolean)
+    .join(' · ')
 
   return (
-    <article className="sheet" aria-label={`${song.title} chord chart`}>
-      <header className="sheet-head">
-        <span className="sheet-meta">({style.name})</span>
-        <h1 className="sheet-title">{song.title}</h1>
-        <span className="sheet-meta sheet-meta-right">
-          Key of {prettyKey(noteName(keyPc, keyPrefersFlats(keyPc)))}
+    <div className={classes.join(' ')} style={style}>
+      {bar.rowStart && !bar.spacer && <span className="bar-number">{index + 1}</span>}
+      {bar.section && (
+        <span className="mark-section">{bar.section === 'i' ? 'Intro' : bar.section === 'v' ? 'Verse' : bar.section}</span>
+      )}
+      {bar.ending && <span className="mark-ending">{bar.ending}.</span>}
+      {(bar.segno || bar.coda) && (
+        <span className="mark-sign" aria-label={bar.segno ? 'Segno' : 'Coda'}>
+          {bar.segno ? GLYPH.segno : GLYPH.coda}
         </span>
+      )}
+      {bar.repeatStart && (
+        <span className="glyph-repeat glyph-repeat-left" aria-hidden="true">
+          {GLYPH.repeatLeft}
+        </span>
+      )}
+      {bar.repeatEnd && (
+        <span className="glyph-repeat glyph-repeat-right" aria-hidden="true">
+          {GLYPH.repeatRight}
+        </span>
+      )}
+      {showTime && <TimeSig time={showTime} />}
+      {active && <span className="bar-highlight" style={{ transform: `scaleX(${progress})` }} />}
+      {chords.map(({ chord, symbol }, j) =>
+        chord ? (
+          <ChordSymbol key={j} chord={chord} keyPc={keyPc} />
+        ) : symbol === null ? (
+          <span key={j} className="chord chord-nc">
+            N.C.
+          </span>
+        ) : (
+          <span key={j} className="chord chord-unknown" title="Unrecognized chord">
+            {symbol}
+          </span>
+        ),
+      )}
+      {bar.fermata && (
+        <span className="mark-fermata" aria-label="Fermata">
+          {GLYPH.fermata}
+        </span>
+      )}
+      {note && <span className="mark-text">{note}</span>}
+    </div>
+  )
+}
+
+export function Chart({ chart, style, transpose, activeMeasure, beatInBar, barBeats }: ChartProps) {
+  const keyPc = (chart.key + transpose + 12) % 12
+  const layout = useMemo(() => rows(chart, transpose), [chart, transpose])
+  const keyName = prettyKey(noteName(keyPc, keyPrefersFlats(keyPc))) + (chart.minor ? '−' : '')
+
+  return (
+    <article className="sheet" aria-label={`${chart.title} chord chart`}>
+      <header className="sheet-head">
+        <span className="sheet-meta">({chart.sourceStyle ?? style.name})</span>
+        <h1 className="sheet-title">{chart.title}</h1>
+        <span className="sheet-meta sheet-meta-right">{chart.composer ?? `Key of ${keyName}`}</span>
       </header>
 
-      <div className="bars">
-        {measures.map((chords, i) => {
-          const classes = ['bar']
-          if (i === 0) classes.push('bar-first')
-          if (i === measures.length - 1) classes.push('bar-final')
-          return (
-            <div key={i} className={classes.join(' ')} style={{ '--chords': chords.length } as CSSProperties}>
-              {i % BARS_PER_ROW === 0 && <span className="bar-number">{i + 1}</span>}
-              {i === 0 && (
-                <span className="timesig" aria-label="4/4 time">
-                  <span>4</span>
-                  <span>4</span>
-                </span>
-              )}
-              {activeMeasure === i && (
-                <span className="bar-highlight" style={{ transform: `scaleX(${Math.min(1, (beatInBar + 0.25) / 4)})` }} />
-              )}
-              {chords.map(({ symbol, chord }, j) =>
-                chord ? (
-                  <ChordSymbol key={j} chord={chord} keyPc={keyPc} />
-                ) : (
-                  <span key={j} className="chord chord-unknown" title="Unrecognized chord">
-                    {symbol}
-                  </span>
-                ),
-              )}
-            </div>
-          )
-        })}
+      <div className="rows">
+        {layout.map((row, r) => (
+          <div className="row" key={r}>
+            {row.map((placed, b) => (
+              <Bar
+                key={placed.index}
+                placed={placed}
+                prev={row[b - 1]}
+                keyPc={keyPc}
+                active={activeMeasure === placed.index}
+                progress={Math.min(1, (beatInBar + 0.25) / barBeats)}
+                showTime={placed.index === 0 ? chart.time : (placed.bar.time ?? null)}
+              />
+            ))}
+          </div>
+        ))}
       </div>
     </article>
   )

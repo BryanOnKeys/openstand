@@ -10,20 +10,22 @@ No install, no account, no subscription. Just open the page and play.
 
 ## Status
 
-OpenStand is in an **early prototype** stage. What works today:
+OpenStand is an **early but usable** practice tool. What works today:
 
-- **Chord charts** rendered as a 4-bar grid with the current bar highlighted while playing
-- **Four styles** — Medium Swing, Ballad (brushes), Bossa Nova (nylon guitar) and Pop Rock. Switch styles while the band is playing.
-- **Generated accompaniment**:
+- **Import from iReal Pro.** Paste an `irealb://` link or a whole playlist (or choose an iReal Pro HTML export) and the tunes land in your library. Sections, repeats, first and second endings, D.C./D.S. al Coda/Fine, time signatures and N.C. bars are all read and played in the right order. Tested against public playlists of almost 2,000 tunes.
+- **A tune library in your browser.** Search by title or composer, filter by playlist. Everything is stored locally (IndexedDB); there is no server and no account.
+- **Share a tune as a link.** The whole chart is compressed into the URL, so whoever opens it sees and hears the same tune.
+- **Four styles:** Medium Swing, Ballad (brushes), Bossa Nova (nylon guitar) and Pop Rock. Switch styles while the band is playing.
+- **Generated accompaniment:**
   - **Bass** walks through chord tones in swing, or plays style patterns (bossa root–fifth, rock eighths), always approaching the next chord smoothly
   - **Piano / guitar** comps with rootless jazz voicings or close-position chords, choosing the shape closest to the previous one (voice leading)
-  - **Drums** pick grooves by position in the form — a set-up on the first bar, two-bar figures in the middle, a fill on the last bar
+  - **Drums** pick grooves by position in the form: a set-up on the first bar, two-bar figures in the middle, a fill on the last bar
   - Every chorus is played a little differently
-- **A real-looking lead sheet** — chord symbols in a handwritten jazz hand (Petaluma), like a hand-copied chart (C−7, B♭7, Eø7, CΔ7), correct flat/sharp spelling in every key, and the current bar marked with a highlighter stroke as it plays
-- **Practice controls** — tempo (40–300 BPM, changes instantly), transpose to any key while playing, number of choruses, count-in, <kbd>Space</kbd> to play/stop
-- **Mixer** — per-instrument volume and mute
-- **Light and dark** themes that follow your system setting
-- **Chord parser** for common jazz chart notation: `C-7`, `F7b9`, `Bb^7`, `Eh7`, `Do7`, `G7alt`, `C7sus`, slash chords (`G/B`)
+- **A real-looking lead sheet.** Chord symbols in a handwritten jazz hand (Petaluma), rehearsal marks, repeat signs, endings, segno and coda, correct flat/sharp spelling in every key, and the current bar marked with a highlighter stroke as it plays.
+- **Practice controls:** tempo (40–300 BPM, changes instantly), transpose to any key while playing, number of choruses, count-in, <kbd>Space</kbd> to play/stop.
+- **Mixer** with per-instrument volume and mute.
+- **Light and dark themes** that follow your system setting, and a layout that works on phones.
+- **Small download.** The sound bank is trimmed to the instruments OpenStand uses and compressed to 4.5 MB.
 
 ## Quick start
 
@@ -36,7 +38,7 @@ npm install
 npm run dev
 ```
 
-Open <http://localhost:5173> and press ▶. The first load downloads a ~32 MB sound bank.
+Open <http://localhost:5173> and press play. The first load downloads a 4.5 MB sound bank.
 
 | Command | What it does |
 | --- | --- |
@@ -44,6 +46,8 @@ Open <http://localhost:5173> and press ▶. The first load downloads a ~32 MB so
 | `npm run build` | Type-check and build for production into `dist/` |
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | Lint with oxlint |
+| `npm test` | Run the unit tests (Vitest) |
+| `npm run soundbank` | Rebuild `public/soundfonts/openstand.sf3` from the source bank (needs ffmpeg) |
 
 ## How it works
 
@@ -51,7 +55,7 @@ Open <http://localhost:5173> and press ▶. The first load downloads a ~32 MB so
 chord chart + style ──▶ timeline ──▶ bass / comp / drums generators ──▶ Standard MIDI file ──▶ SoundFont synth ──▶ audio
 ```
 
-1. **Timeline** (`src/engine/timeline.ts`) — expands the chart into chord slots (count-in, N choruses, final resolution to the tonic).
+1. **Timeline** (`src/engine/timeline.ts`) — follows the chart's repeats, endings and jumps, and expands it into chord slots (count-in, N choruses, final resolution to the tonic). Charts use the [OpenStand chart format](docs/chart-format.md).
 2. **Generators** (`src/engine/bass.ts`, `comp.ts`, `drums.ts`) — read the selected style and turn each slot or bar into note events, with light humanization of timing and velocity.
 3. **MIDI writer** (`src/engine/midiWriter.ts`) — writes a format-1 Standard MIDI File in memory.
 4. **Player** (`src/audio/player.ts`) — plays it through [SpessaSynth](https://github.com/spessasus/spessasynth_lib), a SoundFont synthesizer running in an `AudioWorklet`. Tempo changes adjust the playback rate, so nothing is regenerated.
@@ -64,13 +68,19 @@ Everything runs client-side. There is no server.
 src/
 ├── audio/      Sound bank loading, playback, mixer
 ├── engine/     Accompaniment engine (timeline, generators, MIDI writer)
-├── music/      Chord parsing, voicings, example tunes
+├── formats/    iReal Pro link reader, share links
+├── library/    Tune library stored in the browser (IndexedDB)
+├── music/      Chart format, chord parsing, voicings, example tunes
 ├── styles/     Style format and the style library
-├── ui/         Chart, transport, tune list and mixer components
+├── ui/         Chart, transport, library, mixer and import components
 └── App.tsx     App state and playback wiring
-public/
-└── soundfonts/ GeneralUser GS sound bank
+docs/           Chart format reference
+scripts/        Sound bank build script
+soundbank-src/  Full GeneralUser GS bank the app's sound bank is built from
+tests/          Unit tests
 ```
+
+The engine (`src/engine`, `src/music`, `src/styles`, `src/formats`) does not touch the DOM, so it can be split into its own package for other projects.
 
 ## Styles
 
@@ -99,15 +109,17 @@ Positions are in beats from the start of the bar or chord. Off-beat eighths are 
 ## Roadmap
 
 - [x] Style format with four starter styles
+- [x] Import iReal Pro links and playlists
+- [x] Tune library in the browser, share links
+- [x] Trimmed, compressed sound bank
 - [ ] More styles: even 8ths, funk, samba, Afro-Cuban, waltz, shuffle — and beyond (Balkan, Turkish *usul*, Afrobeat…)
-- [ ] Load styles from JSON / MIDI files so new grooves need no build step
-- [ ] Chart editor and a library of tunes stored locally (IndexedDB)
-- [ ] Import iReal Pro share links (`irealb://`) and export/import of other chord-chart formats (ChordPro, MusicXML)
+- [ ] A style playground: edit a groove in the browser and hear it right away
+- [ ] Chart editor, and export back to iReal Pro, ChordPro and MusicXML
 - [ ] Practice modes: tempo ramp per chorus, loop a section, cycle through all 12 keys
 - [ ] Chord helper: piano keyboard, guitar diagrams, scale suggestions
 - [ ] Export to WAV / MIDI / PDF
-- [ ] Offline support (PWA) and a smaller, trimmed sound bank
-- [ ] Engine published as a standalone package for other projects
+- [ ] Offline support (PWA)
+- [ ] Engine published as a standalone package
 
 ## Contributing
 
@@ -116,14 +128,17 @@ OpenStand is meant to grow as a community project, and musicians are as welcome 
 - **Musicians** — tell us where the band sounds stiff or wrong. Concrete notes help most: *"in a minor ii–V the bass lands on the wrong note in bar 3"*. New styles are the most valuable contribution — see [Styles](#styles).
 - **Developers** — pick an item from the roadmap or an open issue. Please open an issue before large changes so we can agree on the approach.
 
-Before sending a pull request, make sure `npm run build` and `npm run lint` pass. All contributions must be your own work (or compatibly licensed, with attribution) and are released under the project license.
+Before sending a pull request, make sure `npm run build`, `npm run lint` and `npm test` pass. All contributions must be your own work (or compatibly licensed, with attribution) and are released under the project license.
 
 ## Credits
 
 - [SpessaSynth](https://github.com/spessasus/spessasynth_lib) by spessasus — SoundFont synthesizer and MIDI sequencer (Apache-2.0)
 - [Petaluma](https://github.com/steinbergmedia/petaluma) by Steinberg — handwritten music font used for the chart (SIL Open Font License 1.1, see `src/assets/fonts/Petaluma-OFL.txt`)
 - [IBM Plex Sans and Plex Mono](https://github.com/IBM/plex) — interface typefaces (SIL Open Font License 1.1)
-- [GeneralUser GS](https://www.schristiancollins.com/generaluser.php) by S. Christian Collins — sound bank (see `public/soundfonts/GeneralUser-GS-LICENSE.txt`)
+- [GeneralUser GS](https://www.schristiancollins.com/generaluser.php) by S. Christian Collins — sound bank, trimmed and compressed for OpenStand (see `public/soundfonts/GeneralUser-GS-LICENSE.txt`)
+- The iReal Pro format notes in [ireal-musicxml](https://github.com/infojunkie/ireal-musicxml) and [ireal-reader](https://github.com/pianosnake/ireal-reader) helped with the link reader, which is written from scratch
+
+iReal Pro is a trademark of its owner. OpenStand is not affiliated with it; it reads the share links users already have so they can practice with their own charts.
 
 ## License
 

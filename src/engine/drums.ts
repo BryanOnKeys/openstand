@@ -1,7 +1,7 @@
 import { DRUM_NOTES } from '../styles/drums'
 import type { DrumHit, DrumPart, Groove } from '../styles/types'
 import { chance, humanize, pick, place, toTicks, type NoteEvent } from './events'
-import { BEATS_PER_MEASURE, type Bar } from './timeline'
+import type { Bar } from './timeline'
 
 export const DRUM_CHANNEL = 9
 
@@ -56,8 +56,9 @@ export function generateDrums(bars: Bar[], part: DrumPart, swing: number): NoteE
       grooveBar = (grooveBar + 1) % groove.bars
     }
 
-    const from = barIndex * BEATS_PER_MEASURE
-    events.push(...render(current.hits, bar.start, swing, from, from + BEATS_PER_MEASURE))
+    // Grooves are written in 4/4; shorter bars play the start of the pattern
+    const from = barIndex * 4
+    events.push(...render(current.hits, bar.start, swing, from, from + Math.min(4, bar.beats)))
   }
 
   return events

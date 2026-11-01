@@ -1,5 +1,5 @@
+import { beatsPerBar, playbackOrder, type Chart, type TimeSignature } from '../music/chart'
 import { parseChord, transposeChord, type Chord } from '../music/chords'
-import type { Song } from '../music/songs'
 
 export const BEATS_PER_MEASURE = 4
 export const COUNT_IN_BEATS = 4
@@ -9,13 +9,14 @@ export interface Slot {
   chord: Chord
   start: number
   beats: number
-  measure: number // measure index in the chart; -1 for the final chord
+  measure: number // bar index in the chart; -1 for the final chord
   chorus: number
 }
 
-// One bar of the form; drum grooves are chosen per bar
+// One bar as played; drum grooves are chosen per bar
 export interface Bar {
   start: number
+  beats: number
   measure: number // -1 for the ending bar
   isFirst: boolean
   isLast: boolean
@@ -27,53 +28,60 @@ export interface Timeline {
   totalBeats: number
 }
 
-// How beats are split by the number of chords in a measure
-function splitBeats(count: number): number[] {
-  if (count <= 1) return [4]
-  if (count === 2) return [2, 2]
-  if (count === 3) return [2, 1, 1]
-  return [1, 1, 1, 1]
-}
+export function buildTimeline(chart: Chart, transpose: number, choruses: number): Timeline {
+  const chords = new Map<string, Chord>()
+  const toChord = (symbol: string): Chord => {
+    let chord = chords.get(symbol)
+    if (!chord) {
+      const parsed = parseChord(symbol)
+      if (!parsed) throw new Error(`Could not parse chord: ${symbol}`)
+      chord = transposeChord(parsed, transpose)
+      chords.set(symbol, chord)
+    }
+    return chord
+  }
 
-export function buildTimeline(song: Song, transpose: number, choruses: number): Timeline {
-  const form = song.measures.map((m) =>
-    m.map((sym) => {
-      const chord = parseChord(sym)
-      if (!chord) throw new Error(`Could not parse chord: ${sym}`)
-      return transposeChord(chord, transpose)
-    }),
-  )
+  // Time signature in force at each written bar
+  let time: TimeSignature = chart.time
+  const barBeats = chart.bars.map((bar) => {
+    if (bar.time) time = bar.time
+    return beatsPerBar(time)
+  })
 
+  const order = playbackOrder(chart)
   const slots: Slot[] = []
   const bars: Bar[] = []
   let beat = COUNT_IN_BEATS
+
   for (let chorus = 0; chorus < choruses; chorus++) {
-    form.forEach((chords, measure) => {
-      bars.push({ start: beat, measure, isFirst: measure === 0, isLast: measure === form.length - 1 })
-      const lengths = splitBeats(chords.length)
-      chords.forEach((chord, i) => {
-        slots.push({
-          chord,
-          start: beat,
-          beats: lengths[i],
-          measure,
-          chorus,
-        })
-        beat += lengths[i]
-      })
+    // A blank bar keeps the chord that was sounding at the end of the previous one
+    let held: Chord | null = null
+    order.forEach((measure, n) => {
+      const bar = chart.bars[measure]
+      const beats = barBeats[measure]
+      bars.push({ start: beat, beats, measure, isFirst: n === 0, isLast: n === order.length - 1 })
+
+      if (bar.chords.length === 0) {
+        if (held) slots.push({ chord: held, start: beat, beats, measure, chorus })
+      } else {
+        let at = beat
+        for (const c of bar.chords) {
+          held = c.symbol ? toChord(c.symbol) : null // N.C. leaves a gap
+          if (held) slots.push({ chord: held, start: at, beats: c.beats, measure, chorus })
+          at += c.beats
+        }
+      }
+      beat += beats
     })
   }
 
-  // Ending: resolve to the first chord of the form (usually the tonic) and hold
-  bars.push({ start: beat, measure: -1, isFirst: false, isLast: false })
-  slots.push({
-    chord: form[0][0],
-    start: beat,
-    beats: BEATS_PER_MEASURE,
-    measure: -1,
-    chorus: choruses,
-  })
-  beat += BEATS_PER_MEASURE
+  // Ending: resolve to the first chord of the tune (usually the tonic) and hold
+  const first = chart.bars.flatMap((b) => b.chords).find((c) => c.symbol)?.symbol
+  if (first) {
+    bars.push({ start: beat, beats: BEATS_PER_MEASURE, measure: -1, isFirst: false, isLast: false })
+    slots.push({ chord: toChord(first), start: beat, beats: BEATS_PER_MEASURE, measure: -1, chorus: choruses })
+    beat += BEATS_PER_MEASURE
+  }
 
   return { slots, bars, totalBeats: beat }
 }

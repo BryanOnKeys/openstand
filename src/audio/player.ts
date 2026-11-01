@@ -2,7 +2,7 @@ import { MIDIControllers } from 'spessasynth_core'
 import { Sequencer, WorkletSynthesizer } from 'spessasynth_lib'
 import processorUrl from 'spessasynth_lib/dist/spessasynth_processor.min.js?url'
 
-const SOUNDFONT_URL = '/soundfonts/GeneralUser-GS.sf2'
+const SOUNDFONT_URL = '/soundfonts/openstand.sf3'
 
 async function fetchWithProgress(url: string, onProgress: (ratio: number) => void): Promise<ArrayBuffer> {
   const res = await fetch(url)
