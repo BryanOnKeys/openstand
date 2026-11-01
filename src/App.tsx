@@ -210,6 +210,20 @@ export default function App() {
     }
   }, [showTune])
 
+  // A share link opened while the app is already open only changes the URL fragment
+  useEffect(() => {
+    const onHash = async () => {
+      const shared = await chartFromHash(window.location.hash)
+      if (!shared) return
+      const [added] = await addTunes([shared], 'link', 'Shared with me')
+      setTunes((all) => [...all.filter((t) => t.id !== added.id), added])
+      showTune(added)
+      history.replaceState(null, '', window.location.pathname)
+    }
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [showTune])
+
   const importText = useCallback(
     async (text: string): Promise<ImportResult> => {
       const lists = parseIrealLinks(text)

@@ -37,6 +37,9 @@ export class Player {
 
   constructor() {
     this.ctx = new AudioContext({ sampleRate: 44100 })
+    // On iPhone, Web Audio is silenced by the ring/silent switch unless the session is "playback"
+    const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession
+    if (session) session.type = 'playback'
   }
 
   async init(onProgress: (ratio: number) => void): Promise<void> {

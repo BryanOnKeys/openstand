@@ -25,7 +25,7 @@ OpenStand is an **early but usable** practice tool. What works today:
 - **Practice controls:** tempo (40–300 BPM, changes instantly), transpose to any key while playing, number of choruses, count-in, <kbd>Space</kbd> to play/stop.
 - **Mixer** with per-instrument volume and mute.
 - **Light and dark themes** that follow your system setting, and a layout that works on phones.
-- **Small download.** The sound bank is trimmed to the instruments OpenStand uses and compressed to 4.5 MB.
+- **Small download, works offline.** The sound bank is trimmed to the instruments OpenStand uses and compressed to 4.5 MB. After the first visit the app works without a connection and can be installed on a phone's home screen.
 
 ## Quick start
 
@@ -112,13 +112,13 @@ Positions are in beats from the start of the bar or chord. Off-beat eighths are 
 - [x] Import iReal Pro links and playlists
 - [x] Tune library in the browser, share links
 - [x] Trimmed, compressed sound bank
+- [x] Works offline after the first visit (PWA), installable on phones
 - [ ] More styles: even 8ths, funk, samba, Afro-Cuban, waltz, shuffle — and beyond (Balkan, Turkish *usul*, Afrobeat…)
 - [ ] A style playground: edit a groove in the browser and hear it right away
 - [ ] Chart editor, and export back to iReal Pro, ChordPro and MusicXML
 - [ ] Practice modes: tempo ramp per chorus, loop a section, cycle through all 12 keys
 - [ ] Chord helper: piano keyboard, guitar diagrams, scale suggestions
 - [ ] Export to WAV / MIDI / PDF
-- [ ] Offline support (PWA)
 - [ ] Engine published as a standalone package
 
 ## Contributing
