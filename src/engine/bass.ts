@@ -128,6 +128,8 @@ function resolveTone(reg: Register, note: BassNote, root: number, chord: Chord, 
       return fit(root + chordTones(chord)[1])
     case '5':
       return fit(root + fifth)
+    case '6':
+      return fit(root + 9)
     case '5-':
       return fit(root + fifth - 12)
     case '7':

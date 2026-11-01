@@ -17,7 +17,7 @@ OpenStand is an **early but usable** practice tool. What works today:
 - **Import from iReal Pro.** Paste an `irealb://` link or a whole playlist (or choose an iReal Pro HTML export) and the tunes land in your library. Sections, repeats, first and second endings, D.C./D.S. al Coda/Fine, time signatures and N.C. bars are all read and played in the right order. Tested against public playlists of almost 2,000 tunes.
 - **A tune library in your browser.** Search by title or composer, filter by playlist. Everything is stored locally (IndexedDB); there is no server and no account.
 - **Share a tune as a link.** The whole chart is compressed into the URL, so whoever opens it sees and hears the same tune.
-- **Four styles:** Medium Swing, Ballad (brushes), Bossa Nova (nylon guitar) and Pop Rock. Switch styles while the band is playing.
+- **Eight styles:** Medium Swing, Ballad (brushes), Jazz Waltz (3/4), Bossa Nova (nylon guitar), Samba, Pop Rock, Funk (electric piano, sixteenth-note groove) and Shuffle (boogie bass). Imported tunes get the closest style automatically, and you can switch styles while the band is playing.
 - **Generated accompaniment:**
   - **Bass** walks through chord tones in swing, or plays style patterns (bossa root–fifth, rock eighths), always approaching the next chord smoothly
   - **Piano / guitar** comps with rootless jazz voicings or close-position chords, choosing the shape closest to the previous one (voice leading)
@@ -90,9 +90,9 @@ A style is **data, not code**. Each one lives in `src/styles/library/` and descr
 
 | Part | What you describe |
 | --- | --- |
-| `bass` | `walking` (rule-based) or `pattern`: notes as chord degrees — `R`, `3`, `5`, `5-` (fifth below), `7`, `8` (octave), `app` (approach to the next chord) |
+| `bass` | `walking` (rule-based) or `pattern`: notes as chord degrees — `R`, `3`, `5`, `6`, `5-` (fifth below), `7`, `8` (octave), `app` (approach to the next chord) |
 | `comp` | Voicing type (`rootless` or `close`) and rhythms per chord length |
-| `drums` | Kit, count-in, grooves for the first / middle / last bar of the form (1 or 2 bars long), ending |
+| `drums` | Kit, count-in, grooves for the first / middle / last bar of the form (1 or 2 bars long; `beats: 3` for a waltz), ending |
 
 Positions are in beats from the start of the bar or chord. Off-beat eighths are written as `x.5` and are swung automatically when the style has `swing` above `0.5`. A drum hit can carry a probability, so a groove varies on every pass.
 
@@ -110,12 +110,12 @@ Positions are in beats from the start of the bar or chord. Off-beat eighths are 
 
 ## Roadmap
 
-- [x] Style format with four starter styles
+- [x] Style format with eight styles: swing, ballad, jazz waltz, bossa nova, samba, pop rock, funk, shuffle
 - [x] Import iReal Pro links and playlists
 - [x] Tune library in the browser, share links
 - [x] Trimmed, compressed sound bank
 - [x] Works offline after the first visit (PWA), installable on phones
-- [ ] More styles: even 8ths, funk, samba, Afro-Cuban, waltz, shuffle — and beyond (Balkan, Turkish *usul*, Afrobeat…)
+- [ ] More styles: up-tempo swing, Afro-Cuban, reggae, 12/8 — and beyond (Balkan, Turkish *usul*, Afrobeat…)
 - [ ] A style playground: edit a groove in the browser and hear it right away
 - [ ] Chart editor, and export back to iReal Pro, ChordPro and MusicXML
 - [ ] Practice modes: tempo ramp per chorus, loop a section, cycle through all 12 keys

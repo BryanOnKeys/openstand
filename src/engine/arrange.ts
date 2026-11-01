@@ -36,7 +36,7 @@ export function arrange(chart: Chart, style: StyleDefinition, transpose: number,
       program: style.comp.program,
       pan: 74,
       reverb: 40,
-      events: generateComp(timeline.slots, style.comp, swing),
+      events: generateComp(timeline.slots, style.comp, swing, timeline.countIn),
     },
     {
       name: 'Drums',
@@ -44,7 +44,7 @@ export function arrange(chart: Chart, style: StyleDefinition, transpose: number,
       program: style.drums.kit,
       pan: 64,
       reverb: 35,
-      events: generateDrums(timeline.bars, style.drums, swing),
+      events: generateDrums(timeline.bars, style.drums, swing, timeline.countIn),
     },
   ])
   return { midi, timeline }

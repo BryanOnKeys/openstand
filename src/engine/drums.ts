@@ -27,8 +27,8 @@ function render(hits: DrumHit[], start: number, swing: number, from = 0, to = In
 }
 
 // Plays each bar by its position in the form: first bar, middle bars (two-bar grooves), last bar
-export function generateDrums(bars: Bar[], part: DrumPart, swing: number): NoteEvent[] {
-  const events = render(part.countIn, 0, swing)
+export function generateDrums(bars: Bar[], part: DrumPart, swing: number, countIn: number): NoteEvent[] {
+  const events = render(part.countIn, 0, swing, 0, countIn)
   let groove: Groove = pick(part.grooves.middle)
   let grooveBar = 0
 
@@ -56,9 +56,10 @@ export function generateDrums(bars: Bar[], part: DrumPart, swing: number): NoteE
       grooveBar = (grooveBar + 1) % groove.bars
     }
 
-    // Grooves are written in 4/4; shorter bars play the start of the pattern
-    const from = barIndex * 4
-    events.push(...render(current.hits, bar.start, swing, from, from + Math.min(4, bar.beats)))
+    // Each groove bar has the groove's own length; a shorter bar plays the start of it
+    const unit = current.beats ?? 4
+    const from = barIndex * unit
+    events.push(...render(current.hits, bar.start, swing, from, from + Math.min(unit, bar.beats)))
   }
 
   return events

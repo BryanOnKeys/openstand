@@ -7,6 +7,7 @@
 
 import { beatsPerBar, evenSplit, type BarChord, type Chart, type ChartBar, type TimeSignature } from '../music/chart'
 import { parseChord } from '../music/chords'
+import { getStyle } from '../styles'
 
 export interface IrealPlaylist {
   name: string
@@ -25,14 +26,18 @@ export function pitchClass(name: string): number | null {
 }
 
 // iReal style names mapped to the closest OpenStand style
-export function mapStyle(name: string): string {
+export function mapStyle(name: string, time: TimeSignature = [4, 4]): string {
   const s = name.toLowerCase()
-  if (/bossa|samba|latin|baião|baiao|afox|bolero|cha|son |montuno|tango|salsa|afro|chacarera|partido/.test(s))
-    return 'bossa-nova'
-  if (/ballad/.test(s) && !/pop|rock|rnb|soul/.test(s)) return 'ballad'
-  if (/swing|bop|waltz|jazz|shuffle|blues|gypsy|trad|new orleans|second line/.test(s)) return 'medium-swing'
-  if (/pop|rock|even|funk|rnb|r&b|soul|reggae|disco|country|house|smooth|bluegrass|ballad/.test(s)) return 'pop-rock'
-  return 'medium-swing'
+  const inThree = beatsPerBar(time) === 3
+  if (/samba|partido|baião|baiao|afox|frevo/.test(s)) return 'samba'
+  if (/bossa|latin|bolero|cha|son |montuno|tango|salsa|afro|chacarera|rumba|mambo/.test(s)) return 'bossa-nova'
+  if (/waltz/.test(s)) return 'jazz-waltz'
+  if (/funk|rnb|r&b|disco/.test(s) || (/soul/.test(s) && !/ballad/.test(s))) return 'funk'
+  if (/shuffle|blues|boogie|rock'?n'?roll/.test(s) && !/swing/.test(s)) return 'shuffle'
+  if (/ballad/.test(s) && !/pop|rock|rnb|soul|country|folk/.test(s)) return inThree ? 'jazz-waltz' : 'ballad'
+  if (/swing|bop|jazz|gypsy|trad|new orleans|second line/.test(s)) return inThree ? 'jazz-waltz' : 'medium-swing'
+  if (/pop|rock|even|reggae|country|folk|house|smooth|bluegrass|ballad/.test(s)) return 'pop-rock'
+  return inThree ? 'jazz-waltz' : 'medium-swing'
 }
 
 // Undo the irealb:// character scramble (applied to 50-character blocks)
@@ -276,7 +281,7 @@ function parseSong(raw: string): Chart | null {
   const { bars, time } = parseMusic(music, [4, 4])
   if (bars.length === 0) return null
   const { key, minor } = parseKey(keyRaw)
-  const style = mapStyle(styleName)
+  const style = mapStyle(styleName, time)
 
   return {
     format: 'openstand-chart',
@@ -294,7 +299,7 @@ function parseSong(raw: string): Chart | null {
 }
 
 function defaultTempo(style: string): number {
-  return { ballad: 70, 'bossa-nova': 130, 'pop-rock': 110 }[style] ?? 140
+  return getStyle(style).tempo.default
 }
 
 // Accepts a bare link, text containing links, or an iReal HTML playlist export

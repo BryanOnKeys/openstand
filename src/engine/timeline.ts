@@ -2,7 +2,12 @@ import { beatsPerBar, playbackOrder, type Chart, type TimeSignature } from '../m
 import { parseChord, transposeChord, type Chord } from '../music/chords'
 
 export const BEATS_PER_MEASURE = 4
-export const COUNT_IN_BEATS = 4
+
+// The count-in is one bar of a waltz or a 4/4 tune; other meters count four beats
+export function countInBeats(chart: Chart): number {
+  const beats = beatsPerBar(chart.time)
+  return beats === 3 ? 3 : 4
+}
 
 // One chord span on the timeline, in beats
 export interface Slot {
@@ -26,6 +31,7 @@ export interface Timeline {
   slots: Slot[]
   bars: Bar[]
   totalBeats: number
+  countIn: number // beats before the first bar
 }
 
 export function buildTimeline(chart: Chart, transpose: number, choruses: number): Timeline {
@@ -51,7 +57,8 @@ export function buildTimeline(chart: Chart, transpose: number, choruses: number)
   const order = playbackOrder(chart)
   const slots: Slot[] = []
   const bars: Bar[] = []
-  let beat = COUNT_IN_BEATS
+  const countIn = countInBeats(chart)
+  let beat = countIn
 
   for (let chorus = 0; chorus < choruses; chorus++) {
     // A blank bar keeps the chord that was sounding at the end of the previous one
@@ -83,7 +90,7 @@ export function buildTimeline(chart: Chart, transpose: number, choruses: number)
     beat += BEATS_PER_MEASURE
   }
 
-  return { slots, bars, totalBeats: beat }
+  return { slots, bars, totalBeats: beat, countIn }
 }
 
 export function slotAtBeat(timeline: Timeline, beat: number): Slot | undefined {

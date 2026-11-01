@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Player } from './audio/player'
 import { arrange, BASE_BPM, CHANNELS, type Part } from './engine/arrange'
-import { COUNT_IN_BEATS, type Timeline } from './engine/timeline'
+import type { Timeline } from './engine/timeline'
 import { parseIrealLinks } from './formats/ireal'
 import { chartFromHash, shareUrl } from './formats/share'
 import { addTunes, loadTunes, removePlaylist } from './library/db'
@@ -17,7 +17,7 @@ interface Position {
   measure: number // -1 during the count-in and the ending
   chorus: number
   beatInBar: number
-  countIn: number // 1-4 during the count-in, otherwise 0
+  countIn: number // 1, 2, 3… during the count-in, otherwise 0
   ending: boolean
   barBeats: number
 }
@@ -39,8 +39,9 @@ const LAST_TUNE = 'openstand:last-tune'
 const compLabel = (program: number) => (program >= 24 && program <= 31 ? 'Guitar' : 'Piano')
 
 function positionAt(timeline: Timeline, beat: number): Position | null {
-  if (beat < COUNT_IN_BEATS) {
-    return { measure: -1, chorus: 0, beatInBar: beat, countIn: Math.floor(beat) + 1, ending: false, barBeats: 4 }
+  if (beat < timeline.countIn) {
+    const barBeats = timeline.countIn
+    return { measure: -1, chorus: 0, beatInBar: beat, countIn: Math.floor(beat) + 1, ending: false, barBeats }
   }
   const bar = timeline.bars.findLast((b) => b.start <= beat)
   if (!bar) return null

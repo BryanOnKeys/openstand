@@ -33,7 +33,7 @@ function chooseVoicing(chord: Chord, kind: CompPart['voicing'], prevCenter: numb
   return best
 }
 
-export function generateComp(slots: Slot[], part: CompPart, swing: number): NoteEvent[] {
+export function generateComp(slots: Slot[], part: CompPart, swing: number, countIn: number): NoteEvent[] {
   const events: NoteEvent[] = []
   let prevCenter = 62
 
@@ -54,7 +54,7 @@ export function generateComp(slots: Slot[], part: CompPart, swing: number): Note
     const hits: CompHit[] = pick(options).map(([at, dur, vel]): CompHit => [at, dur, vel])
 
     // Sometimes anticipate the chord by an eighth
-    if (hits[0][0] === 0 && slot.start > 4 && chance(part.anticipation ?? 0)) {
+    if (hits[0][0] === 0 && slot.start > countIn && chance(part.anticipation ?? 0)) {
       hits[0] = [-0.5, hits[0][1] + (1 - swing), hits[0][2]]
     }
 

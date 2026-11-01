@@ -11,9 +11,9 @@ export type Position = number
 export type StyleFamily = 'jazz' | 'latin' | 'pop' | 'funk' | 'world'
 
 // Degrees used in bass patterns, relative to the chord's bass note
-// R: root, 8: root an octave up, 3/5/7: chord tones above, 5-: fifth below,
-// app: half-step approach to the next chord's root
-export type BassTone = 'R' | '8' | '3' | '5' | '5-' | '7' | 'app'
+// R: root, 8: root an octave up, 3/5/7: chord tones above, 6: major sixth above,
+// 5-: fifth below, app: half-step approach to the next chord's root
+export type BassTone = 'R' | '8' | '3' | '5' | '6' | '5-' | '7' | 'app'
 
 export interface BassNote {
   at: Position
@@ -45,6 +45,7 @@ export type DrumHit = [at: Position, drum: DrumName, vel: number, chance?: numbe
 
 export interface Groove {
   bars: 1 | 2
+  beats?: number // length of one groove bar in beats (default 4; 3 for a waltz)
   hits: DrumHit[]
 }
 

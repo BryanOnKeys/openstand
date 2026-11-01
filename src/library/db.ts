@@ -1,6 +1,7 @@
 // The tune library, stored in the browser (IndexedDB). Nothing leaves the device.
 
 import Dexie, { type EntityTable } from 'dexie'
+import { mapStyle } from '../formats/ireal'
 import type { Chart } from '../music/chart'
 import type { Tune } from '../music/songs'
 
@@ -9,7 +10,11 @@ const db = new Dexie('openstand') as Dexie & { tunes: EntityTable<Tune, 'id'> }
 db.version(1).stores({ tunes: 'id, playlist, addedAt' })
 
 export async function loadTunes(): Promise<Tune[]> {
-  return db.tunes.orderBy('addedAt').toArray()
+  const tunes = await db.tunes.orderBy('addedAt').toArray()
+  // Imported tunes follow the current style mapping, so new styles reach tunes imported earlier
+  return tunes.map((t) =>
+    t.chart.sourceStyle ? { ...t, chart: { ...t.chart, style: mapStyle(t.chart.sourceStyle, t.chart.time) } } : t,
+  )
 }
 
 // A stable id from the chart's content, so importing the same tune twice doesn't duplicate it
