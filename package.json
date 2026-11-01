@@ -36,5 +36,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/canbmaj7/openstand"
-  }
+  },
+  "homepage": "https://openstand-eta.vercel.app"
 }

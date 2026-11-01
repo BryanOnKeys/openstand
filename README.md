@@ -6,6 +6,8 @@
 
 No install, no account, no subscription. Just open the page and play.
 
+**[Open OpenStand](https://openstand-eta.vercel.app)**
+
 ---
 
 ## Status
